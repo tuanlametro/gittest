@@ -262,7 +262,7 @@ void zmain(void)
         button = !button;
     }
     
-                            // Ultra Sonic Start function
+                            
     while(button == true) 
     {
         int d = Ultra_GetDistance();
