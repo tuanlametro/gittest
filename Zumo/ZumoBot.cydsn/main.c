@@ -249,7 +249,8 @@ void zmain(void)
 
 
 #if 1
-void motor_tank_turn(uint8 l_speed, uint8 r_speed, uint32 delay);
+void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
+
 void zmain(void)
 {
     Ultra_Start(); 
@@ -272,20 +273,32 @@ void zmain(void)
         else 
         {
             motor_forward(0,0);
+        }
             
         
         vTaskDelay(200);
     }
-    //motor_turn(100, 100, 2000);
+
 }  
     
-void motor_tank_turn(uint8 l_speed, uint8 r_speed, uint32 delay)
+void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay);
 {
-    MotorDirLeft_Write(0);      // set LeftMotor backward mode
-    MotorDirRight_Write(0);
+    if (char == 'l') 
+    {
+        MotorDirLeft_Write(1);      // Sets left tread to reverse
+        MotorDirRight_Write(0);
+    }
+    if (char == 'r') 
+    {
+        MotorDirLeft_Write(0);      
+        MotorDirRight_Write(1);     // Sets right tread to reverse
+    }
     PWM_WriteCompare1(l_speed); 
     PWM_WriteCompare2(r_speed); 
     vTaskDelay(delay);
+    
+    MotorDirLeft_Write(0);          // Returns both motors to forward after turn is complete    
+    MotorDirRight_Write(0); 
 }
 #endif
 
