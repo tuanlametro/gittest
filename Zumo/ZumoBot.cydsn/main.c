@@ -249,17 +249,21 @@ void zmain(void)
 
 
 #if 1
-void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
+void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay);
+bool button = false;
 
 void zmain(void)
 {
     Ultra_Start(); 
     motor_start();              // enable motor controller
     motor_forward(0,0);
-    vTaskDelay(3000);
+    if(SW1_Read() == 0)
+    {
+        button = !button;
+    }
     
                             // Ultra Sonic Start function
-    while(1) 
+    while(button == true) 
     {
         int d = Ultra_GetDistance();
         // Print the detected distance (centimeters)
@@ -267,28 +271,24 @@ void zmain(void)
         if( d <= 10 )
         {
             Beep(500, 10);
-            motor_backward(0,0);
-            motor_turn(100, 10, 2000);
+            motor_tank_turn('l', 100, 100, 200);
         }
         else 
         {
-            motor_forward(0,0);
+            motor_forward(100,5000);
         }
-            
-        
-        vTaskDelay(200);
     }
 
 }  
     
-void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay);
+void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
 {
-    if (char == 'l') 
+    if(direction == 'l') 
     {
         MotorDirLeft_Write(1);      // Sets left tread to reverse
         MotorDirRight_Write(0);
     }
-    if (char == 'r') 
+    if(direction == 'r') 
     {
         MotorDirLeft_Write(0);      
         MotorDirRight_Write(1);     // Sets right tread to reverse
