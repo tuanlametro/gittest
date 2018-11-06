@@ -74,23 +74,71 @@ void zmain(void)
     char name[32];
     int age;
     
+    TickType_t time_start, time_end, total_time;
     
     printf("\n\n");
     
-    printf("Enter your name: ");
-    //fflush(stdout);
-    scanf("%s", name);
-    printf("Enter your age: ");
-    //fflush(stdout);
-    scanf("%d", &age);
+    //printf("Enter your name: ");
     
-    printf("You are [%s], age = %d\n", name, age);
+    //fflush(stdout);
+    //scanf("%s", name);
+    printf("Enter your age: ");
+    time_start = xTaskGetTickCount();
+    scanf("%d", &age);
+    time_end = xTaskGetTickCount();
+    total_time = time_end - time_start;
+    if(total_time<3000) 
+    {
+        if(age <= 21)
+        {
+            printf("Super fast dude!");
+        }
+        else if(age >= 22 && age <= 50)
+        {
+            printf("Be quick or be dead");
+        }
+        else 
+        {
+            printf("Still going strong");
+        }
+    }
+    else if(total_time >=3000 && total_time <=5000) 
+    {
+        if(age <= 21)
+        {
+            printf("So mediocre.");
+        }
+        else if(age >= 22 && age <= 50)
+        {
+            printf("You’re so average.");
+        }
+        else 
+        {
+            printf("You are doing ok for your age.");
+        }
+    }
+    else 
+    {
+        if(age <= 21)
+        {
+            printf("My granny is faster than you!");
+        }
+        else if(age >= 22 && age <= 50)
+        {
+            printf("Have you been smoking something illegal? ");
+        }
+        else 
+        {
+            printf("Do they still allow you to drive?");
+        }
+    }
+    //printf("You are [%s], age = %d\n", name, age);
 
-    while(true)
+    /*while(true)
     {
         BatteryLed_Write(!SW1_Read());
         vTaskDelay(100);
-    }
+    }*/
  }   
 #endif
 
@@ -374,17 +422,24 @@ void zmain(void)
 
 #if 0
 //motor
+void tankturn(uint8 l_speed, uint8 r_speed, uint32 delay);
+void goodturn(uint8 l_speed, uint8 r_speed, uint32 delay);
 void zmain(void)
 {
-    motor_start();              // enable motor controller
+    motor_start(1);              // enable motor controller
     motor_forward(0,0);         // set speed to zero to stop motors
 
-    vTaskDelay(3000);
+    vTaskDelay(5000);
     
-    motor_forward(100,2000);     // moving forward
-    motor_turn(200,50,2000);     // turn
-    motor_turn(50,200,2000);     // turn
-    motor_backward(100,2000);    // moving backward
+    goodturn(177,200,2000);     // moving forward
+    tankturn(150,150,330); 
+    goodturn(177,200,1700);     // moving forward
+    tankturn(150,150,330);     // turn right
+    goodturn(177,200,1800);     // moving forward
+    tankturn(150,150,355);     // turn right   
+    goodturn(140,80,2700);     // turn right
+    goodturn(177,200,500);     // turn right
+    //motor_backward(100,2000);    // moving backward
      
     motor_forward(0,0);         // stop motors
 
@@ -395,6 +450,23 @@ void zmain(void)
 
     }
 }
+void tankturn(uint8 l_speed, uint8 r_speed, uint32 delay)
+{
+    MotorDirLeft_Write(0);      // set LeftMotor forward mode
+    MotorDirRight_Write(1);
+    PWM_WriteCompare1(l_speed); 
+    PWM_WriteCompare2(r_speed); 
+    vTaskDelay(delay);
+}
+void goodturn(uint8 l_speed, uint8 r_speed, uint32 delay)
+{
+    MotorDirLeft_Write(0);      // set LeftMotor forward mode
+    MotorDirRight_Write(0);
+    PWM_WriteCompare1(l_speed); 
+    PWM_WriteCompare2(r_speed); 
+    vTaskDelay(delay);
+}
+    
 #endif
 
 #if 0
