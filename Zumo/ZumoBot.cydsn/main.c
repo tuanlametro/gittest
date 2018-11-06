@@ -254,31 +254,34 @@ bool button = false;
 
 void zmain(void)
 {
-    Ultra_Start(); 
-    motor_start();              // enable motor controller
-    motor_forward(0,0);
-    if(SW1_Read() == 0)
+    while(1)
     {
-        button = !button;
-    }
-    
-                            
-    while(button == true) 
-    {
-        int d = Ultra_GetDistance();
-        // Print the detected distance (centimeters)
-        printf("distance = %d\r\n", d);
-        if( d <= 10 )
+        Ultra_Start(); 
+        motor_start();
+        motor_forward(0,0);
+        if(SW1_Read() == 0)
         {
-            Beep(500, 10);
-            motor_tank_turn('l', 100, 100, 200);
+            button = true;
         }
-        else 
+        
+                                
+        while(button == true) 
         {
-            motor_forward(100,5000);
+            
+            int d = Ultra_GetDistance();
+            // Print the detected distance (centimeters)
+            printf("distance = %d\r\n", d);
+            if( d <= 10 )
+            {
+                Beep(100, 100);
+                motor_tank_turn('l', 100, 100, 500);
+            }
+            else 
+            {
+                motor_forward(150, 0);
+            }
         }
     }
-
 }  
     
 void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
