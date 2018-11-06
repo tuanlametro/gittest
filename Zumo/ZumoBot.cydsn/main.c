@@ -421,7 +421,7 @@ void zmain(void)
 
 
 #if 0
-//motor
+//motor this is what lily made
 void tankturn(uint8 l_speed, uint8 r_speed, uint32 delay);
 void goodturn(uint8 l_speed, uint8 r_speed, uint32 delay);
 void zmain(void)
