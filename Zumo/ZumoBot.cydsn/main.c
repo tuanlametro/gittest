@@ -53,6 +53,7 @@
  * @brief   
  * @details  ** Enable global interrupt since Zumo library uses interrupts. **<br>&nbsp;&nbsp;&nbsp;CyGlobalIntEnable;<br>
 */
+void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay);
 
 #if 0
 // Hello World!
@@ -95,20 +96,17 @@ void zmain(void)
 #endif
 
 
-#if 0
+#if 1
 //battery level//
-// BatteryLed_Write(1); // Switch led on 
-// BatteryLed_Write(0); // Switch led off 
-// SW1_Read() returns zero when button is pressed
-// SW1_Read() returns one when button is not pressed
-void ledloop();
-void batcheck();
-int16 adcresult = 0;
-float volts = 0.0;
-bool warning = false;
 
-void zmain(void)
+void batterytest()
 {   
+    void batcheck();
+    void batterytest();
+    void ledloop();
+    int16 adcresult = 0;
+    float volts = 0.0;
+    bool warning = false;
     ADC_Battery_Start();
     ADC_Battery_StartConvert();
     while(1)
@@ -122,7 +120,6 @@ void zmain(void)
             ledloop();
         }
     }
-}
 
 void batcheck()
 {
@@ -160,6 +157,8 @@ void ledloop()
             warning = false;
         }
     }
+}
+
 }
 #endif
 
@@ -247,9 +246,8 @@ void zmain(void)
  }   
 #endif
 
-
 #if 0
-void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay);
+
 bool button = false;
 
 void zmain(void)
@@ -286,25 +284,7 @@ void zmain(void)
     }
 }  
     
-void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
-{
-    if(direction == 'l') 
-    {
-        MotorDirLeft_Write(1);      // Sets left tread to reverse
-        MotorDirRight_Write(0);
-    }
-    if(direction == 'r') 
-    {
-        MotorDirLeft_Write(0);      
-        MotorDirRight_Write(1);     // Sets right tread to reverse
-    }
-    PWM_WriteCompare1(l_speed); 
-    PWM_WriteCompare2(r_speed); 
-    vTaskDelay(delay);
-    
-    MotorDirLeft_Write(0);          // Returns both motors to forward after turn is complete    
-    MotorDirRight_Write(0); 
-}
+
 #endif
 
 #if 0
@@ -331,8 +311,6 @@ void zmain(void)
  }   
 #endif
 
-
-
 #if 0
 //IR receiver - read raw data
 void zmain(void)
@@ -358,7 +336,6 @@ void zmain(void)
     }    
  }   
 #endif
-
 
 #if 0
 //reflectance
@@ -389,7 +366,6 @@ void zmain(void)
 }   
 #endif
 
-
 #if 0
 //motor
 void zmain(void)
@@ -415,7 +391,7 @@ void zmain(void)
 }
 #endif
 
-#if 1
+#if 0
 /* Example of how to use the Accelerometer!!!*/
 void zmain(void)
 {
@@ -464,7 +440,6 @@ void zmain(void)
     }
  }   
 #endif
-
 
 #if 0
 void zmain(void)
@@ -540,5 +515,28 @@ void zmain(void)
     }
  }   
 #endif
+
+// Put functions here for now
+
+void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
+{
+    if(direction == 'l') 
+    {
+        MotorDirLeft_Write(1);      // Sets left tread to reverse
+        MotorDirRight_Write(0);
+    }
+    if(direction == 'r') 
+    {
+        MotorDirLeft_Write(0);      
+        MotorDirRight_Write(1);     // Sets right tread to reverse
+    }
+    PWM_WriteCompare1(l_speed); 
+    PWM_WriteCompare2(r_speed); 
+    vTaskDelay(delay);
+    
+    MotorDirLeft_Write(0);          // Returns both motors to forward after turn is complete    
+    MotorDirRight_Write(0); 
+}
+
 
 /* [] END OF FILE */
