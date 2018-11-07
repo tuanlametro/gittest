@@ -537,4 +537,34 @@ void zmain(void)
  }   
 #endif
 
+// Assignment 11
+void zmain(void){
+    uint8 button = 1;
+   while(1){ 
+        button = SW1_Read();
+        if (button == 0){
+            for (int i = 0; i < 3; i++){
+                BatteryLed_Write(1);
+                vTaskDelay(500);
+                BatteryLed_Write(0);
+                vTaskDelay(500);
+            }
+        
+            for (int i = 0; i < 3; i++){  
+                BatteryLed_Write(1);
+                vTaskDelay(1500);
+                BatteryLed_Write(0);
+                vTaskDelay(500);
+            }
+        
+            for (int i = 0; i < 3; i++){
+                BatteryLed_Write(1);
+                vTaskDelay(500);
+                BatteryLed_Write(0);
+                vTaskDelay(500);
+            }
+        }
+    }
+}    
+
 /* [] END OF FILE */
