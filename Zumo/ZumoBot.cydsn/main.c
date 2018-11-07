@@ -248,7 +248,7 @@ void zmain(void)
 #endif
 
 
-#if 1
+#if 0
 void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay);
 bool button = false;
 
@@ -274,7 +274,9 @@ void zmain(void)
             if( d <= 10 )
             {
                 Beep(100, 100);
-                motor_tank_turn('l', 100, 100, 500);
+                motor_backward(0,0);
+                motor_turn(150, 75, 500);
+                //motor_tank_turn('l', 100, 100, 500);
             }
             else 
             {
@@ -413,14 +415,16 @@ void zmain(void)
 }
 #endif
 
-#if 0
-/* Example of how to use te Accelerometer!!!*/
+#if 1
+/* Example of how to use the Accelerometer!!!*/
 void zmain(void)
 {
     struct accData_ data;
     
     printf("Accelerometer test...\n");
 
+    motor_start();              // enable motor controller
+    motor_forward(40,10000);
     if(!LSM303D_Start()){
         printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
         vTaskSuspend(NULL);
