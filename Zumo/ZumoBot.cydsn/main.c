@@ -394,10 +394,9 @@ void zmain(void)
 void zmain(void)
 {
     struct accData_ data;
-    uint16_t last = 0, current = 0, thresh = 9000;
+    uint16_t last = 0, current = 0, diff = 0, thresh = 6000;
     printf("Accelerometer test...\n");
 
-    motor_start();              // enable motor controller
     if(!LSM303D_Start()){
         printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
         vTaskSuspend(NULL);
@@ -406,28 +405,27 @@ void zmain(void)
         printf("Device Ok...\n");
     }
     
-    for(;;)
+    motor_start();
+    motor_forward(100, 1000);
+    while(1)
     {
+        motor_forward(100,0);
         LSM303D_Read_Acc(&data);
         printf("%8d %8d %8d\n", data.accX, data.accY, data.accZ);
         /*if(last == 0)
         {
             last = data.accX;
-        }
+        }*/
         
-        else if((last - data.accX) > thresh)
+        diff = (last - data.accX);
+        
+        if (diff > thresh)
         {
-            motor_backward(0,0);
-            motor_turn(200, 100, 300);
+            Beep(100, 100);
+            motor_tank_turn('l', 100, 100, 500); 
         }
-        
-        else 
-        {
-            motor_forward(150,0);
-        }
-        
-        last = data.accX; */
-        vTaskDelay(50);
+        last = data.accX;
+        vTaskDelay(50); 
     }
 }   
 #endif    
