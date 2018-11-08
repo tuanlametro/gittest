@@ -53,22 +53,10 @@
  * @brief   
  * @details  ** Enable global interrupt since Zumo library uses interrupts. **<br>&nbsp;&nbsp;&nbsp;CyGlobalIntEnable;<br>
 */
+void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay);
 
-#if 0
-// Hello World!
-void zmain(void)
-{
-    printf("\nHello, World!\n");
-
-    while(true)
-    {
-        vTaskDelay(100); // sleep (in an infinite loop)
-    }
- }   
-#endif
-
-#if 0
-// Name and age
+#if 1
+// Week 2 Assignment 2, by Lily
 void zmain(void)
 {
     char name[32];
@@ -77,11 +65,15 @@ void zmain(void)
     TickType_t time_start, time_end, total_time;
     
     printf("\n\n");
+<<<<<<< HEAD
     
     //printf("Enter your name: ");
     
     //fflush(stdout);
     //scanf("%s", name);
+=======
+
+>>>>>>> master
     printf("Enter your age: ");
     time_start = xTaskGetTickCount();
     scanf("%d", &age);
@@ -110,7 +102,11 @@ void zmain(void)
         }
         else if(age >= 22 && age <= 50)
         {
+<<<<<<< HEAD
             printf("You’re so average.");
+=======
+            printf("You\’re so average.");
+>>>>>>> master
         }
         else 
         {
@@ -132,31 +128,36 @@ void zmain(void)
             printf("Do they still allow you to drive?");
         }
     }
+<<<<<<< HEAD
     //printf("You are [%s], age = %d\n", name, age);
+=======
+>>>>>>> master
 
     /*while(true)
     {
         BatteryLed_Write(!SW1_Read());
         vTaskDelay(100);
     }*/
+<<<<<<< HEAD
  }   
+=======
+ } 
+>>>>>>> master
 #endif
 
 
 #if 0
 //battery level//
-// BatteryLed_Write(1); // Switch led on 
-// BatteryLed_Write(0); // Switch led off 
-// SW1_Read() returns zero when button is pressed
-// SW1_Read() returns one when button is not pressed
-void ledloop();
 void batcheck();
+void batterytest();
+void ledloop();
 int16 adcresult = 0;
 float volts = 0.0;
 bool warning = false;
 
 void zmain(void)
 {   
+
     ADC_Battery_Start();
     ADC_Battery_StartConvert();
     while(1)
@@ -209,6 +210,7 @@ void ledloop()
         }
     }
 }
+
 #endif
 
 #if 0
@@ -295,46 +297,42 @@ void zmain(void)
  }   
 #endif
 
+#if 0
 
-#if 1
-void motor_tank_turn(uint8 l_speed, uint8 r_speed, uint32 delay);
 void zmain(void)
 {
-    Ultra_Start(); 
-    motor_start();              // enable motor controller
-    motor_forward(0,0);
-    vTaskDelay(3000);
-    
-                            // Ultra Sonic Start function
-    while(1) 
+    uint8_t button = 0;
+    while(1)
     {
-        int d = Ultra_GetDistance();
-        // Print the detected distance (centimeters)
-        printf("distance = %d\r\n", d);
-        if( d <= 10 )
+        Ultra_Start(); 
+        motor_start();
+        motor_forward(0,0);
+        if(SW1_Read() == 0)
         {
-            Beep(500, 10);
-            motor_backward(0,0);
-            motor_turn(100, 10, 2000);
+            button = !button;
         }
-        else 
-        {
-            motor_forward(0,0);
-            
         
-        vTaskDelay(200);
+                                
+        while(button == 1) 
+        {
+            int d = Ultra_GetDistance(); // d is distance in cm
+            printf("distance = %d\r\n", d);
+            if( d <= 10 )
+            {
+                Beep(100, 100);
+                motor_backward(0,0);
+                motor_turn(150, 75, 500);
+                //motor_tank_turn('l', 100, 100, 500);
+            }
+            else 
+            {
+                motor_forward(150, 0);
+            }
+        }
     }
-    //motor_turn(100, 100, 2000);
 }  
     
-void motor_tank_turn(uint8 l_speed, uint8 r_speed, uint32 delay)
-{
-    MotorDirLeft_Write(0);      // set LeftMotor backward mode
-    MotorDirRight_Write(0);
-    PWM_WriteCompare1(l_speed); 
-    PWM_WriteCompare2(r_speed); 
-    vTaskDelay(delay);
-}
+
 #endif
 
 #if 0
@@ -361,8 +359,6 @@ void zmain(void)
  }   
 #endif
 
-
-
 #if 0
 //IR receiver - read raw data
 void zmain(void)
@@ -388,7 +384,6 @@ void zmain(void)
     }    
  }   
 #endif
-
 
 #if 0
 //reflectance
@@ -418,7 +413,6 @@ void zmain(void)
     }
 }   
 #endif
-
 
 #if 0
 //motor this is what lily made
@@ -470,13 +464,15 @@ void goodturn(uint8 l_speed, uint8 r_speed, uint32 delay)
 #endif
 
 #if 0
-/* Example of how to use te Accelerometer!!!*/
+/* Example of how to use the Accelerometer!!!*/
 void zmain(void)
 {
     struct accData_ data;
     
     printf("Accelerometer test...\n");
 
+    motor_start();              // enable motor controller
+    motor_forward(40,10000);
     if(!LSM303D_Start()){
         printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
         vTaskSuspend(NULL);
@@ -516,7 +512,6 @@ void zmain(void)
     }
  }   
 #endif
-
 
 #if 0
 void zmain(void)
@@ -591,6 +586,60 @@ void zmain(void)
         vTaskDelay(50);
     }
  }   
+#endif
+
+// Put functions here for now
+
+void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
+{
+    if(direction == 'l') 
+    {
+        MotorDirLeft_Write(1);      // Sets left tread to reverse
+        MotorDirRight_Write(0);
+    }
+    if(direction == 'r') 
+    {
+        MotorDirLeft_Write(0);      
+        MotorDirRight_Write(1);     // Sets right tread to reverse
+    }
+    PWM_WriteCompare1(l_speed); 
+    PWM_WriteCompare2(r_speed); 
+    vTaskDelay(delay);
+    
+    MotorDirLeft_Write(0);          // Returns both motors to forward after turn is complete    
+    MotorDirRight_Write(0); 
+}
+
+#if 0
+// Assignment 1
+void zmain(void){
+    uint8 button = 1;
+    while(1){ 
+        button = SW1_Read();
+        if (button == 0){
+            for (int i = 0; i < 3; i++){
+                BatteryLed_Write(1);
+                vTaskDelay(500);
+                BatteryLed_Write(0);
+                vTaskDelay(500);
+            }
+        
+            for (int i = 0; i < 3; i++){  
+                BatteryLed_Write(1);
+                vTaskDelay(1500);
+                BatteryLed_Write(0);
+                vTaskDelay(500);
+            }
+        
+            for (int i = 0; i < 3; i++){
+                BatteryLed_Write(1);
+                vTaskDelay(500);
+                BatteryLed_Write(0);
+                vTaskDelay(500);
+            }
+        }
+    }
+}    
 #endif
 
 /* [] END OF FILE */
