@@ -55,19 +55,6 @@
 */
 void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay);
 
-#if 0
-// Hello World!
-void zmain(void)
-{
-    printf("\nHello, World!\n");
-
-    while(true)
-    {
-        vTaskDelay(100); // sleep (in an infinite loop)
-    }
- }   
-#endif
-
 #if 1
 // Week 2 Assignment 2, by Lily
 void zmain(void)
