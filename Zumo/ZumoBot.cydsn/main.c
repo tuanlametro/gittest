@@ -389,16 +389,15 @@ void zmain(void)
 }
 #endif
 
-#if 0
+#if 1
 /* Example of how to use the Accelerometer!!!*/
 void zmain(void)
 {
     struct accData_ data;
-    
+    uint16_t last = 0, current = 0, thresh = 9000;
     printf("Accelerometer test...\n");
 
     motor_start();              // enable motor controller
-    motor_forward(40,10000);
     if(!LSM303D_Start()){
         printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
         vTaskSuspend(NULL);
@@ -410,10 +409,27 @@ void zmain(void)
     for(;;)
     {
         LSM303D_Read_Acc(&data);
-        printf("%8d %8d %8d\n",data.accX, data.accY, data.accZ);
+        printf("%8d %8d %8d\n", data.accX, data.accY, data.accZ);
+        /*if(last == 0)
+        {
+            last = data.accX;
+        }
+        
+        else if((last - data.accX) > thresh)
+        {
+            motor_backward(0,0);
+            motor_turn(200, 100, 300);
+        }
+        
+        else 
+        {
+            motor_forward(150,0);
+        }
+        
+        last = data.accX; */
         vTaskDelay(50);
     }
- }   
+}   
 #endif    
 
 #if 0
@@ -536,8 +552,9 @@ void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
     MotorDirRight_Write(0); 
 }
 
-#if 1
+#if 0
 // Assignment 1
+    
 void zmain(void){
     uint8 button = 1;
     while(1){ 
