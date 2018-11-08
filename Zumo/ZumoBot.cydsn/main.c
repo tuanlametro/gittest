@@ -98,15 +98,16 @@ void zmain(void)
 
 #if 1
 //battery level//
+void batcheck();
+void batterytest();
+void ledloop();
+int16 adcresult = 0;
+float volts = 0.0;
+bool warning = false;
 
-void batterytest()
+void zmain(void)
 {   
-    void batcheck();
-    void batterytest();
-    void ledloop();
-    int16 adcresult = 0;
-    float volts = 0.0;
-    bool warning = false;
+
     ADC_Battery_Start();
     ADC_Battery_StartConvert();
     while(1)
@@ -120,6 +121,7 @@ void batterytest()
             ledloop();
         }
     }
+}
 
 void batcheck()
 {
@@ -159,7 +161,6 @@ void ledloop()
     }
 }
 
-}
 #endif
 
 #if 0
