@@ -68,31 +68,74 @@ void zmain(void)
  }   
 #endif
 
-#if 0
-// Name and age
+#if 1
+// Week 2 Assignment 2, by Lily
 void zmain(void)
 {
     char name[32];
     int age;
     
+    TickType_t time_start, time_end, total_time;
     
     printf("\n\n");
-    
-    printf("Enter your name: ");
-    //fflush(stdout);
-    scanf("%s", name);
-    printf("Enter your age: ");
-    //fflush(stdout);
-    scanf("%d", &age);
-    
-    printf("You are [%s], age = %d\n", name, age);
 
-    while(true)
+    printf("Enter your age: ");
+    time_start = xTaskGetTickCount();
+    scanf("%d", &age);
+    time_end = xTaskGetTickCount();
+    total_time = time_end - time_start;
+    if(total_time<3000) 
+    {
+        if(age <= 21)
+        {
+            printf("Super fast dude!");
+        }
+        else if(age >= 22 && age <= 50)
+        {
+            printf("Be quick or be dead");
+        }
+        else 
+        {
+            printf("Still going strong");
+        }
+    }
+    else if(total_time >=3000 && total_time <=5000) 
+    {
+        if(age <= 21)
+        {
+            printf("So mediocre.");
+        }
+        else if(age >= 22 && age <= 50)
+        {
+            printf("You\’re so average.");
+        }
+        else 
+        {
+            printf("You are doing ok for your age.");
+        }
+    }
+    else 
+    {
+        if(age <= 21)
+        {
+            printf("My granny is faster than you!");
+        }
+        else if(age >= 22 && age <= 50)
+        {
+            printf("Have you been smoking something illegal? ");
+        }
+        else 
+        {
+            printf("Do they still allow you to drive?");
+        }
+    }
+
+    /*while(true)
     {
         BatteryLed_Write(!SW1_Read());
         vTaskDelay(100);
-    }
- }   
+    }*/
+ } 
 #endif
 
 
@@ -536,7 +579,7 @@ void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
     MotorDirRight_Write(0); 
 }
 
-#if 1
+#if 0
 // Assignment 1
 void zmain(void){
     uint8 button = 1;
