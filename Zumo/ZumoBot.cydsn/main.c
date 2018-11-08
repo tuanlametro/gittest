@@ -517,6 +517,7 @@ void zmain(void)
  }   
 #endif
 
+<<<<<<< HEAD
 // Put functions here for now
 
 void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
@@ -539,5 +540,36 @@ void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
     MotorDirRight_Write(0); 
 }
 
+=======
+// Assignment 11
+void zmain(void){
+    uint8 button = 1;
+   while(1){ 
+        button = SW1_Read();
+        if (button == 0){
+            for (int i = 0; i < 3; i++){
+                BatteryLed_Write(1);
+                vTaskDelay(500);
+                BatteryLed_Write(0);
+                vTaskDelay(500);
+            }
+        
+            for (int i = 0; i < 3; i++){  
+                BatteryLed_Write(1);
+                vTaskDelay(1500);
+                BatteryLed_Write(0);
+                vTaskDelay(500);
+            }
+        
+            for (int i = 0; i < 3; i++){
+                BatteryLed_Write(1);
+                vTaskDelay(500);
+                BatteryLed_Write(0);
+                vTaskDelay(500);
+            }
+        }
+    }
+}    
+>>>>>>> 3a1bb59572b6c3accb3f0bf490c3bfa7216aa28e
 
 /* [] END OF FILE */
