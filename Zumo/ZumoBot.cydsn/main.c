@@ -96,7 +96,7 @@ void zmain(void)
 #endif
 
 
-#if 1
+#if 0
 //battery level//
 void batcheck();
 void batterytest();
@@ -249,10 +249,9 @@ void zmain(void)
 
 #if 0
 
-bool button = false;
-
 void zmain(void)
 {
+    uint8_t button = 0;
     while(1)
     {
         Ultra_Start(); 
@@ -260,15 +259,13 @@ void zmain(void)
         motor_forward(0,0);
         if(SW1_Read() == 0)
         {
-            button = true;
+            button = !button;
         }
         
                                 
-        while(button == true) 
+        while(button == 1) 
         {
-            
-            int d = Ultra_GetDistance();
-            // Print the detected distance (centimeters)
+            int d = Ultra_GetDistance(); // d is distance in cm
             printf("distance = %d\r\n", d);
             if( d <= 10 )
             {
@@ -517,7 +514,6 @@ void zmain(void)
  }   
 #endif
 
-<<<<<<< HEAD
 // Put functions here for now
 
 void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
@@ -540,11 +536,11 @@ void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
     MotorDirRight_Write(0); 
 }
 
-=======
-// Assignment 11
+#if 1
+// Assignment 1
 void zmain(void){
     uint8 button = 1;
-   while(1){ 
+    while(1){ 
         button = SW1_Read();
         if (button == 0){
             for (int i = 0; i < 3; i++){
@@ -570,6 +566,6 @@ void zmain(void){
         }
     }
 }    
->>>>>>> 3a1bb59572b6c3accb3f0bf490c3bfa7216aa28e
+#endif
 
 /* [] END OF FILE */
