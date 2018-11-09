@@ -60,6 +60,18 @@
 void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay);
 
 #if 0
+<<<<<<< HEAD
+=======
+// Week 2 Assignment 1
+void zmain(void){
+    uint8 button = 1;
+    while(1){ 
+        button = SW1_Read();
+        if (button == 0){
+            for (int i = 0; i < 3; i++){
+                BatteryLed_Write(1);
+                vTaskDelay(500);
+                BatteryLed_Write(0);
                 vTaskDelay(500);
             }
         
