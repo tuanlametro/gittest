@@ -51,12 +51,13 @@
 #define coeff 5/4095 /*Vref divided by the number of steps between 0 and max*/
 #define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
 #define SIZE 6
+#define DIR 0 // 0 is left, 1 is right
 /**
  * @file    main.c
  * @brief   
  * @details  ** Enable global interrupt since Zumo library uses interrupts. **<br>&nbsp;&nbsp;&nbsp;CyGlobalIntEnable;<br>
 */
-void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay);
+void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay);
 
 #if 0
 // Hello World!
@@ -401,27 +402,24 @@ void zmain(void)
     srand(time(NULL));
     struct accData_ data;
     int thresh = -6000;
-    int r = rand() % 2;
     
+    //randn();
     printf("Accelerometer test...\n");
-    printf("%d", r);
-    /*if(!LSM303D_Start()){
+
+    if(!LSM303D_Start())
+    {
         printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
         vTaskSuspend(NULL);
     }
-    else {
+    else 
+    {
         printf("Device Ok...\n");
     }
     
-    motor_start();*/
-    //motor_forward(100, 1000); 
-    //randn();
-
+    motor_start();
     
-    /*while(1)
+    while(1)
     {
-        //motor_forward(100,250);  
-        
         LSM303D_Read_Acc(&data);
         
         if(data.accX > thresh)
@@ -431,24 +429,25 @@ void zmain(void)
         
         else if(data.accX < thresh)
         {
-            motor_backward(100,0); ;  
+            if(data.accX % 2 == DIR)
+            {
+                motor_tank_turn(0, 100, 100, 500);
+            }
+            else if(data.accX % 2 != DIR)
+            {
+                motor_tank_turn(1, 100, 100, 500);
+            }
         }
-        
-        printf("%8d %8d %8d\n", data.accX, data.accY, data.accZ);
         vTaskDelay(50);
-    }*/
+    }
 }   
 
 void randn()
 {
+    int r = rand();
     
-    int r[SIZE];
+    printf("%d\n", r);
     
-    for(int i = 0; i <= SIZE; i++)
-    {
-        r[i] = rand() % 20;
-        printf("%d", r[i]);
-    }
 }
     
 #endif    
@@ -553,14 +552,14 @@ void zmain(void)
 
 // Put functions here for now
 
-void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
+void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay)
 {
-    if(direction == 'l') 
+    if(dir == DIR) 
     {
         MotorDirLeft_Write(1);      // Sets left tread to reverse
         MotorDirRight_Write(0);
     }
-    if(direction == 'r') 
+    if(dir == !DIR) 
     {
         MotorDirLeft_Write(0);      
         MotorDirRight_Write(1);     // Sets right tread to reverse
