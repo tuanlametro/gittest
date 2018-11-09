@@ -60,6 +60,29 @@
 void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay);
 
 #if 0
+                vTaskDelay(500);
+            }
+        
+            for (int i = 0; i < 3; i++){  
+                BatteryLed_Write(1);
+                vTaskDelay(1500);
+                BatteryLed_Write(0);
+                vTaskDelay(500);
+            }
+        
+            for (int i = 0; i < 3; i++){
+                BatteryLed_Write(1);
+                vTaskDelay(500);
+                BatteryLed_Write(0);
+                vTaskDelay(500);
+            }
+        }
+    }
+}    
+#endif
+
+#if 0
+>>>>>>> master
 // Week 2 Assignment 2, by Lily
 void zmain(void)
 {
@@ -98,7 +121,7 @@ void zmain(void)
         }
         else if(age >= 22 && age <= 50)
         {
-            printf("You\’re so average.");
+            printf("You’re so average.");
         }
         else 
         {
@@ -129,9 +152,8 @@ void zmain(void)
  } 
 #endif
 
-
-#if 0
-//battery level//
+#if 1
+// Week 2 Assignment 3, by Joshua
 void batcheck();
 void batterytest();
 void ledloop();
@@ -694,6 +716,7 @@ void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay)
     MotorDirRight_Write(0); 
 }
 
+<<<<<<< HEAD
 #if 0
 // Assignment 1
     
@@ -726,5 +749,8 @@ void zmain(void){
     }
 }    
 #endif
+=======
+
+>>>>>>> master
 
 /* [] END OF FILE */
