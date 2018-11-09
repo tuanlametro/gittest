@@ -60,8 +60,6 @@
 void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay);
 
 #if 0
-<<<<<<< HEAD
-=======
 // Week 2 Assignment 1
 void zmain(void){
     uint8 button = 1;
@@ -94,7 +92,6 @@ void zmain(void){
 #endif
 
 #if 0
->>>>>>> master
 // Week 2 Assignment 2, by Lily
 void zmain(void)
 {
@@ -155,12 +152,6 @@ void zmain(void)
             printf("Do they still allow you to drive?");
         }
     }
-
-    /*while(true)
-    {
-        BatteryLed_Write(!SW1_Read());
-        vTaskDelay(100);
-    }*/
  } 
 #endif
 
@@ -460,63 +451,15 @@ void zmain(void)
 #if 1
 /* Example of how to use the Accelerometer!!!*/
 struct accData_ data;
-int thresh; // Acts as both the threshold to trigger a reverse, and also as the seed to 
+int thresh = -5000;
 void acceltest(void);
 int randn(void);
 int seed(void);
 
 void zmain(void)
-<<<<<<< HEAD
 {
-    struct accData_ data;
-    uint16_t last = 0, current = 0, thresh = 0; 
 
-    motor_start();              // enable motor controller
-    
-    
-    if(!LSM303D_Start()){
-        printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
-        vTaskSuspend(NULL);
-    }
-    else {
-        printf("Device Ok!\n");
-    }
-    
-    while(1)
-    {  
-        while(thresh == 0)
-        { 
-            for(int i = 0; i < 4; i++)
-            {
-                motor_forward(50, 0);
-                LSM303D_Read_Acc(&data);
-                if(data.accX > last)
-                {
-                    thresh = data.accX;
-                }
-                last = data.accX;
-                printf("%8d", thresh);
-                vTaskDelay(50);
-            }   
-        }
-        /*motor_turn(180, 200, 50);
-        LSM303D_Read_Acc(&data);
-        if((data.accX - last) > 5000)
-        {
-            Beep(100, 50);
-            motor_backward(0,0);
-            motor_turn(150, 75, 500);
-            motor_forward(0,0);
-        }
-        last = data.accX;
-        vTaskDelay(50);*/
-    }
-   
- }   
-=======
-{ 
     acceltest();
-    thresh = -5000;
     srand(seed());
     
     while(1)
@@ -563,7 +506,7 @@ void zmain(void)
   
 void acceltest(void)
 {
-        if(!LSM303D_Start())
+    if(!LSM303D_Start())
     {
         printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
         vTaskSuspend(NULL);
@@ -574,18 +517,6 @@ void acceltest(void)
     }
 }
 
-int randn(void)
-{
-    int i = 0, count = 0;
-    for(i = 0; i < 5; i++)
-    {
-        if((rand() % 2) == 1)
-        {
-            count += 1;
-        }
-    }
-    return count;
-}
 int seed(void)
 {
     int x = 0;
@@ -602,10 +533,19 @@ int seed(void)
     }
     return x;
 }
-    
-    
-    
->>>>>>> joshua-branch
+
+int randn(void)
+{
+    int i = 0, count = 0;
+    for(i = 0; i < 5; i++)
+    {
+        if((rand() % 2) == 1)
+        {
+            count += 1;
+        }
+    }
+    return count;
+}
 #endif    
 
 #if 0
