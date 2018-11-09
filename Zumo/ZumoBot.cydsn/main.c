@@ -47,7 +47,6 @@
 #include "serial1.h"
 #include <unistd.h>
 #include <stdlib.h>
-#include <time.h>
 #define coeff 5/4095 /*Vref divided by the number of steps between 0 and max*/
 #define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
 #define SIZE 6
@@ -60,7 +59,7 @@
 void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay);
 
 #if 0
-// Week 2 Assignment 1
+// Week 2 Assignment 1, by Tuan
 void zmain(void){
     uint8 button = 1;
     while(1){ 
@@ -155,7 +154,7 @@ void zmain(void)
  } 
 #endif
 
-#if 1
+#if 0
 // Week 2 Assignment 3, by Joshua
 void batcheck();
 void batterytest();
@@ -219,61 +218,142 @@ void ledloop()
         }
     }
 }
+#endif
 
+#if 1
+// Week 3 Assignment 2, by Joshua 
+void zmain(void)
+{
+    uint8_t button = 0;
+    while(1)
+    {
+        Ultra_Start(); 
+        motor_start();
+        motor_forward(0,0);
+        if(SW1_Read() == 0)
+        {
+            button = !button;
+        }
+                            
+        while(button == 1) 
+        {
+            int d = Ultra_GetDistance(); // d is distance in cm
+            printf("distance = %d\r\n", d);
+            if( d <= 10 )
+            {
+                Beep(100, 100);
+                motor_backward(0,0);
+                motor_turn(150, 75, 500);
+                //motor_tank_turn(0, 100, 100, 500); Commented out because it isn't strictly what the assignment wanted.
+            }
+            else 
+            {
+                motor_forward(150, 0);
+            }
+        }
+    }
+}  
 #endif
 
 #if 0
-// button
+// Week 3 Assignment 3, by Joshua
+struct accData_ data;
+int thresh = -5000;
+void acceltest(void);
+int randn(void);
+int seed(void);
+
 void zmain(void)
 {
-    uint8 button = SW1_Read();
-    void S()
-    {
-        for(int i = 0; i <= 2; i++)
-        {
-            printf("S");
-            BatteryLed_Write(1);
-            vTaskDelay(100);
-            BatteryLed_Write(0);
-            vTaskDelay(100);  
-        }
-    }
+
+    acceltest();
+    srand(seed());
     
-    void O()
-    {
-        for(int i = 0; i <= 2; i++)
+    while(1)
+    {   
+        LSM303D_Read_Acc(&data);
+           
+        if(randn() == 5)
         {
-            printf("O");
-            BatteryLed_Write(1);
-            vTaskDelay(300);
-            BatteryLed_Write(0);
-            vTaskDelay(100);  
-        }
-    }
-    while(button == 0) 
-    {
-        /* printf("Press button within 5 seconds!\n");
-        int i = 50;
-        while(i > 0) {
-            if(SW1_Read() == 0) {
-                break;
+            Beep(50,100);
+            if(data.accX % 2 == DIR)
+            {
+                motor_tank_turn(0, 100, 100, 500);
             }
-            vTaskDelay(100);
-            --i;
+            else if(data.accX % 2 != DIR)
+            {
+                motor_tank_turn(1, 100, 100, 500);
+            } 
         }
-        if(i > 0) {
-            printf("Good work\n");
-            while(SW1_Read() == 0) vTaskDelay(10); // wait until button is released
+        
+        else
+        {
+            if(data.accX > thresh)
+            {
+            motor_forward(100,0);
+            }
+            
+            else if(data.accX < thresh)
+            {
+                motor_backward(100, 200);
+                
+                if(data.accX % 2 == DIR)
+                {
+                    motor_tank_turn(0, 100, 100, 500);
+                }
+                else if(data.accX % 2 != DIR)
+                {
+                    motor_tank_turn(1, 100, 100, 500);
+                }
+            }
         }
-        else {
-            printf("You didn't press the button\n");
-        }*/
-        S();
-        O();
-        S();
+        vTaskDelay(50);
+    }
+}   
+  
+void acceltest(void)
+{
+    if(!LSM303D_Start())
+    {
+        printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
+        vTaskSuspend(NULL);
+    }
+    else 
+    {
+        printf("Device Ok...\n");
     }
 }
-#endif
+
+int seed(void)
+{
+    int x = 0;
+    motor_start();
+    motor_forward(100, 0);
+    for(int i = 0; i < 10; i++)
+    {
+        LSM303D_Read_Acc(&data);
+        if(data.accX > x)
+        {
+           x = (data.accX);
+        }
+        vTaskDelay(50);
+    }
+    return x;
+}
+
+int randn(void)
+{
+    int i = 0, count = 0;
+    for(i = 0; i < 5; i++)
+    {
+        if((rand() % 2) == 1)
+        {
+            count += 1;
+        }
+    }
+    return count;
+}
+#endif 
 
 #if 0
 // button
@@ -305,45 +385,7 @@ void zmain(void)
     }
  }   
 #endif
-
-#if 0
-
-void zmain(void)
-{
-    uint8_t button = 0;
-    while(1)
-    {
-        Ultra_Start(); 
-        motor_start();
-        motor_forward(0,0);
-        if(SW1_Read() == 0)
-        {
-            button = !button;
-        }
-        
-                                
-        while(button == 1) 
-        {
-            int d = Ultra_GetDistance(); // d is distance in cm
-            printf("distance = %d\r\n", d);
-            if( d <= 10 )
-            {
-                Beep(100, 100);
-                motor_backward(0,0);
-                motor_turn(150, 75, 500);
-                //motor_tank_turn('l', 100, 100, 500);
-            }
-            else 
-            {
-                motor_forward(150, 0);
-            }
-        }
-    }
-}  
-    
-
-#endif
-
+  
 #if 0
 //IR receiverm - how to wait for IR remote commands
 void zmain(void)
@@ -446,107 +488,7 @@ void zmain(void)
 
     }
 }
-#endif
-
-#if 1
-/* Example of how to use the Accelerometer!!!*/
-struct accData_ data;
-int thresh = -5000;
-void acceltest(void);
-int randn(void);
-int seed(void);
-
-void zmain(void)
-{
-
-    acceltest();
-    srand(seed());
-    
-    while(1)
-    {   
-        LSM303D_Read_Acc(&data);
-           
-        if(randn() == 5)
-        {
-            Beep(50,100);
-            if(data.accX % 2 == DIR)
-            {
-                motor_tank_turn(0, 100, 100, 500);
-            }
-            else if(data.accX % 2 != DIR)
-            {
-                motor_tank_turn(1, 100, 100, 500);
-            } 
-        }
-        
-        else
-        {
-            if(data.accX > thresh)
-            {
-            motor_forward(100,0);
-            }
-            
-            else if(data.accX < thresh)
-            {
-                motor_backward(100, 200);
-                
-                if(data.accX % 2 == DIR)
-                {
-                    motor_tank_turn(0, 100, 100, 500);
-                }
-                else if(data.accX % 2 != DIR)
-                {
-                    motor_tank_turn(1, 100, 100, 500);
-                }
-            }
-        }
-        vTaskDelay(50);
-    }
-}   
-  
-void acceltest(void)
-{
-    if(!LSM303D_Start())
-    {
-        printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
-        vTaskSuspend(NULL);
-    }
-    else 
-    {
-        printf("Device Ok...\n");
-    }
-}
-
-int seed(void)
-{
-    int x = 0;
-    motor_start();
-    motor_forward(100, 0);
-    for(int i = 0; i < 10; i++)
-    {
-        LSM303D_Read_Acc(&data);
-        if(data.accX > x)
-        {
-           x = (data.accX);
-        }
-        vTaskDelay(50);
-    }
-    return x;
-}
-
-int randn(void)
-{
-    int i = 0, count = 0;
-    for(i = 0; i < 5; i++)
-    {
-        if((rand() % 2) == 1)
-        {
-            count += 1;
-        }
-    }
-    return count;
-}
-#endif    
+#endif 
 
 #if 0
 // MQTT test
@@ -667,42 +609,5 @@ void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay)
     MotorDirLeft_Write(0);          // Returns both motors to forward after turn is complete    
     MotorDirRight_Write(0); 
 }
-
-<<<<<<< HEAD
-#if 0
-// Assignment 1
-    
-void zmain(void){
-    uint8 button = 1;
-    while(1){ 
-        button = SW1_Read();
-        if (button == 0){
-            for (int i = 0; i < 3; i++){
-                BatteryLed_Write(1);
-                vTaskDelay(500);
-                BatteryLed_Write(0);
-                vTaskDelay(500);
-            }
-        
-            for (int i = 0; i < 3; i++){  
-                BatteryLed_Write(1);
-                vTaskDelay(1500);
-                BatteryLed_Write(0);
-                vTaskDelay(500);
-            }
-        
-            for (int i = 0; i < 3; i++){
-                BatteryLed_Write(1);
-                vTaskDelay(500);
-                BatteryLed_Write(0);
-                vTaskDelay(500);
-            }
-        }
-    }
-}    
-#endif
-=======
-
->>>>>>> master
 
 /* [] END OF FILE */
