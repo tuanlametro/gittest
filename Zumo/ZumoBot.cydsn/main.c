@@ -395,33 +395,25 @@ void zmain(void)
 
 #if 1
 /* Example of how to use the Accelerometer!!!*/
-void randn();
+struct accData_ data;
+int thresh; // Acts as both the threshold to trigger a reverse, and also as the seed to 
+void acceltest(void);
+int randn(void);
+int seed(void);
 
 void zmain(void)
 { 
-    struct accData_ data;
-    int thresh = -6000;
-    
-    printf("Accelerometer test...\n");
-
-    if(!LSM303D_Start())
-    {
-        printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
-        vTaskSuspend(NULL);
-    }
-    else 
-    {
-        printf("Device Ok...\n");
-    }
-    
-    motor_start();
+    acceltest();
+    thresh = -5000;
+    srand(seed());
     
     while(1)
     {   
         LSM303D_Read_Acc(&data);
-        int a = rand();
-        if((a % 2) == 0)
+           
+        if(randn() == 5)
         {
+            Beep(50,100);
             if(data.accX % 2 == DIR)
             {
                 motor_tank_turn(0, 100, 100, 500);
@@ -432,7 +424,8 @@ void zmain(void)
             } 
         }
         
- 
+        else
+        {
             if(data.accX > thresh)
             {
             motor_forward(100,0);
@@ -451,15 +444,54 @@ void zmain(void)
                     motor_tank_turn(1, 100, 100, 500);
                 }
             }
-        
+        }
         vTaskDelay(50);
     }
 }   
-
-void randn()
+  
+void acceltest(void)
 {
-    TickType_t = xTaskGetTickCount;
+        if(!LSM303D_Start())
+    {
+        printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
+        vTaskSuspend(NULL);
+    }
+    else 
+    {
+        printf("Device Ok...\n");
+    }
 }
+
+int randn(void)
+{
+    int i = 0, count = 0;
+    for(i = 0; i < 5; i++)
+    {
+        if((rand() % 2) == 1)
+        {
+            count += 1;
+        }
+    }
+    return count;
+}
+int seed(void)
+{
+    int x = 0;
+    motor_start();
+    motor_forward(100, 0);
+    for(int i = 0; i < 10; i++)
+    {
+        LSM303D_Read_Acc(&data);
+        if(data.accX > x)
+        {
+           x = (data.accX);
+        }
+        vTaskDelay(50);
+    }
+    return x;
+}
+    
+    
     
 #endif    
 
