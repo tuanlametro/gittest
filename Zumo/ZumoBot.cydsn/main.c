@@ -46,8 +46,11 @@
 #include <sys/time.h>
 #include "serial1.h"
 #include <unistd.h>
-#define coeff 5/4095; /*Vref divided by the number of steps between 0 and max*/
-#define realv 5/3; /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
+#include <stdlib.h>
+#include <time.h>
+#define coeff 5/4095 /*Vref divided by the number of steps between 0 and max*/
+#define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
+#define SIZE 6
 /**
  * @file    main.c
  * @brief   
@@ -391,13 +394,18 @@ void zmain(void)
 
 #if 1
 /* Example of how to use the Accelerometer!!!*/
+void randn();
+
 void zmain(void)
 {
+    srand(time(NULL));
     struct accData_ data;
-    uint16_t last = 0, current = 0, diff = 0, thresh = 6000;
+    int thresh = -6000;
+    int r = rand() % 2;
+    
     printf("Accelerometer test...\n");
-
-    if(!LSM303D_Start()){
+    printf("%d", r);
+    /*if(!LSM303D_Start()){
         printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
         vTaskSuspend(NULL);
     }
@@ -405,29 +413,44 @@ void zmain(void)
         printf("Device Ok...\n");
     }
     
-    motor_start();
-    motor_forward(100, 1000);
-    while(1)
+    motor_start();*/
+    //motor_forward(100, 1000); 
+    //randn();
+
+    
+    /*while(1)
     {
-        motor_forward(100,0);
+        //motor_forward(100,250);  
+        
         LSM303D_Read_Acc(&data);
-        printf("%8d %8d %8d\n", data.accX, data.accY, data.accZ);
-        /*if(last == 0)
-        {
-            last = data.accX;
-        }*/
         
-        diff = (last - data.accX);
-        
-        if (diff > thresh)
+        if(data.accX > thresh)
         {
-            Beep(100, 100);
-            motor_tank_turn('l', 100, 100, 500); 
+        motor_forward(100,0);
         }
-        last = data.accX;
-        vTaskDelay(50); 
-    }
+        
+        else if(data.accX < thresh)
+        {
+            motor_backward(100,0); ;  
+        }
+        
+        printf("%8d %8d %8d\n", data.accX, data.accY, data.accZ);
+        vTaskDelay(50);
+    }*/
 }   
+
+void randn()
+{
+    
+    int r[SIZE];
+    
+    for(int i = 0; i <= SIZE; i++)
+    {
+        r[i] = rand() % 20;
+        printf("%d", r[i]);
+    }
+}
+    
 #endif    
 
 #if 0
