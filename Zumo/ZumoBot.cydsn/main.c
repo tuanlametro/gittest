@@ -398,12 +398,10 @@ void zmain(void)
 void randn();
 
 void zmain(void)
-{
-    srand(time(NULL));
+{ 
     struct accData_ data;
     int thresh = -6000;
     
-    //randn();
     printf("Accelerometer test...\n");
 
     if(!LSM303D_Start())
@@ -419,15 +417,10 @@ void zmain(void)
     motor_start();
     
     while(1)
-    {
+    {   
         LSM303D_Read_Acc(&data);
-        
-        if(data.accX > thresh)
-        {
-        motor_forward(100,0);
-        }
-        
-        else if(data.accX < thresh)
+        int a = rand();
+        if((a % 2) == 0)
         {
             if(data.accX % 2 == DIR)
             {
@@ -436,18 +429,36 @@ void zmain(void)
             else if(data.accX % 2 != DIR)
             {
                 motor_tank_turn(1, 100, 100, 500);
-            }
+            } 
         }
+        
+ 
+            if(data.accX > thresh)
+            {
+            motor_forward(100,0);
+            }
+            
+            else if(data.accX < thresh)
+            {
+                motor_backward(100, 200);
+                
+                if(data.accX % 2 == DIR)
+                {
+                    motor_tank_turn(0, 100, 100, 500);
+                }
+                else if(data.accX % 2 != DIR)
+                {
+                    motor_tank_turn(1, 100, 100, 500);
+                }
+            }
+        
         vTaskDelay(50);
     }
 }   
 
 void randn()
 {
-    int r = rand();
-    
-    printf("%d\n", r);
-    
+    TickType_t = xTaskGetTickCount;
 }
     
 #endif    
