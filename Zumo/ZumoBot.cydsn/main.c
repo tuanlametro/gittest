@@ -46,14 +46,18 @@
 #include <sys/time.h>
 #include "serial1.h"
 #include <unistd.h>
-#define coeff 5/4095; /*Vref divided by the number of steps between 0 and max*/
-#define realv 5/3; /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
+#include <stdlib.h>
+#include <time.h>
+#define coeff 5/4095 /*Vref divided by the number of steps between 0 and max*/
+#define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
+#define SIZE 6
+#define DIR 0 // 0 is left, 1 is right
 /**
  * @file    main.c
  * @brief   
  * @details  ** Enable global interrupt since Zumo library uses interrupts. **<br>&nbsp;&nbsp;&nbsp;CyGlobalIntEnable;<br>
 */
-void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay);
+void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay);
 
 #if 0
 // Week 2 Assignment 2, by Lily
@@ -421,7 +425,14 @@ void zmain(void)
 
 #if 1
 /* Example of how to use the Accelerometer!!!*/
+struct accData_ data;
+int thresh; // Acts as both the threshold to trigger a reverse, and also as the seed to 
+void acceltest(void);
+int randn(void);
+int seed(void);
+
 void zmain(void)
+<<<<<<< HEAD
 {
     struct accData_ data;
     uint16_t last = 0, current = 0, thresh = 0; 
@@ -468,6 +479,99 @@ void zmain(void)
     }
    
  }   
+=======
+{ 
+    acceltest();
+    thresh = -5000;
+    srand(seed());
+    
+    while(1)
+    {   
+        LSM303D_Read_Acc(&data);
+           
+        if(randn() == 5)
+        {
+            Beep(50,100);
+            if(data.accX % 2 == DIR)
+            {
+                motor_tank_turn(0, 100, 100, 500);
+            }
+            else if(data.accX % 2 != DIR)
+            {
+                motor_tank_turn(1, 100, 100, 500);
+            } 
+        }
+        
+        else
+        {
+            if(data.accX > thresh)
+            {
+            motor_forward(100,0);
+            }
+            
+            else if(data.accX < thresh)
+            {
+                motor_backward(100, 200);
+                
+                if(data.accX % 2 == DIR)
+                {
+                    motor_tank_turn(0, 100, 100, 500);
+                }
+                else if(data.accX % 2 != DIR)
+                {
+                    motor_tank_turn(1, 100, 100, 500);
+                }
+            }
+        }
+        vTaskDelay(50);
+    }
+}   
+  
+void acceltest(void)
+{
+        if(!LSM303D_Start())
+    {
+        printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
+        vTaskSuspend(NULL);
+    }
+    else 
+    {
+        printf("Device Ok...\n");
+    }
+}
+
+int randn(void)
+{
+    int i = 0, count = 0;
+    for(i = 0; i < 5; i++)
+    {
+        if((rand() % 2) == 1)
+        {
+            count += 1;
+        }
+    }
+    return count;
+}
+int seed(void)
+{
+    int x = 0;
+    motor_start();
+    motor_forward(100, 0);
+    for(int i = 0; i < 10; i++)
+    {
+        LSM303D_Read_Acc(&data);
+        if(data.accX > x)
+        {
+           x = (data.accX);
+        }
+        vTaskDelay(50);
+    }
+    return x;
+}
+    
+    
+    
+>>>>>>> joshua-branch
 #endif    
 
 #if 0
@@ -570,14 +674,14 @@ void zmain(void)
 
 // Put functions here for now
 
-void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
+void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay)
 {
-    if(direction == 'l') 
+    if(dir == DIR) 
     {
         MotorDirLeft_Write(1);      // Sets left tread to reverse
         MotorDirRight_Write(0);
     }
-    if(direction == 'r') 
+    if(dir == !DIR) 
     {
         MotorDirLeft_Write(0);      
         MotorDirRight_Write(1);     // Sets right tread to reverse
@@ -592,6 +696,7 @@ void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
 
 #if 0
 // Assignment 1
+    
 void zmain(void){
     uint8 button = 1;
     while(1){ 
