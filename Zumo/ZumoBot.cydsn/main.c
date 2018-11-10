@@ -57,6 +57,8 @@
  * @details  ** Enable global interrupt since Zumo library uses interrupts. **<br>&nbsp;&nbsp;&nbsp;CyGlobalIntEnable;<br>
 */
 void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay);
+bool power(void);
+bool button = false;
 
 #if 0
 // Week 2 Assignment 1, by Tuan
@@ -221,21 +223,17 @@ void ledloop()
 #endif
 
 #if 1
-// Week 3 Assignment 2, by Joshua 
+// Week 3 Assignment 2
 void zmain(void)
 {
-    uint8_t button = 0;
     while(1)
     {
         Ultra_Start(); 
         motor_start();
         motor_forward(0,0);
-        if(SW1_Read() == 0)
-        {
-            button = !button;
-        }
-                            
-        while(button == 1) 
+        power();
+        
+        while(button == true) 
         {
             int d = Ultra_GetDistance(); // d is distance in cm
             printf("distance = %d\r\n", d);
@@ -256,7 +254,7 @@ void zmain(void)
 #endif
 
 #if 0
-// Week 3 Assignment 3, by Joshua
+// Week 3 Assignment 3
 struct accData_ data;
 int thresh = -5000;
 void acceltest(void);
@@ -588,7 +586,7 @@ void zmain(void)
  }   
 #endif
 
-// Put functions here for now
+// Our own functions
 
 void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay)
 {
@@ -610,4 +608,12 @@ void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay)
     MotorDirRight_Write(0); 
 }
 
+bool power(void)
+{
+    if(SW1_Read() == 0)
+        {
+            button = !button;
+        }
+    return button;
+}
 /* [] END OF FILE */
