@@ -222,7 +222,7 @@ void ledloop()
 }
 #endif
 
-#if 1
+#if 0
 // Week 3 Assignment 2
 void zmain(void)
 {
@@ -230,8 +230,8 @@ void zmain(void)
     {
         Ultra_Start(); 
         motor_start();
-        motor_forward(0,0);
         power();
+        motor_forward(0,0);
         
         while(button == true) 
         {
@@ -434,7 +434,7 @@ void zmain(void)
  }   
 #endif
 
-#if 0
+#if 1
 //reflectance
 void zmain(void)
 {
