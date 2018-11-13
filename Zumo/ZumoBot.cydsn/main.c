@@ -222,6 +222,29 @@ void ledloop()
 }
 #endif
 
+#if 1
+//Week 3 Assignment 1, by Lily
+void zmain(void)
+{
+    motor_start();              // enable motor controller
+    motor_forward(0,0);         // set speed to zero to stop motors
+
+    vTaskDelay(5000);
+    motor_turn(177,200,2000);     // moving forward
+    motor_tank_turn(1,150,150,330); 
+    motor_turn(177,200,1700);     // moving forward
+    motor_tank_turn(1,150,150,330);     // turn right
+    motor_turn(177,200,1800);     // moving forward
+    motor_tank_turn(1,150,150,355);     // turn right   
+    motor_turn(140,80,2700);     // turn right
+    motor_turn(177,200,500);     // turn right
+     
+    motor_forward(0,0);         // stop motors
+
+    motor_stop();               // disable motor controller
+}
+#endif
+
 #if 0
 // Week 3 Assignment 2
 void zmain(void)
