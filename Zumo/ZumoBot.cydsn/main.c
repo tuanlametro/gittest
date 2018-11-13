@@ -222,7 +222,7 @@ void ledloop()
 }
 #endif
 
-#if 1
+#if 0
 //Week 3 Assignment 1, by Lily
 void zmain(void)
 {
@@ -461,27 +461,44 @@ void zmain(void)
 //reflectance
 void zmain(void)
 {
+    int count = 0, current = 0;
     struct sensors_ ref;
     struct sensors_ dig;
-
+    motor_start();
+    motor_forward(0,0);
     reflectance_start();
     reflectance_set_threshold(9000, 9000, 11000, 11000, 9000, 9000); // set center sensor threshold to 11000 and others to 9000
     
-
-    for(;;)
+    while(count != 4)
     {
         // read raw sensor values
         reflectance_read(&ref);
-        // print out each period of reflectance sensors
-        printf("%5d %5d %5d %5d %5d %5d\r\n", ref.l3, ref.l2, ref.l1, ref.r1, ref.r2, ref.r3);       
         
-        // read digital values that are based on threshold. 0 = white, 1 = black
-        // when blackness value is over threshold the sensors reads 1, otherwise 0
-        reflectance_digital(&dig); 
-        //print out 0 or 1 according to results of reflectance period
-        printf("%5d %5d %5d %5d %5d %5d \r\n", dig.l3, dig.l2, dig.l1, dig.r1, dig.r2, dig.r3);        
+        motor_turn(100, 100, 0);
         
-        vTaskDelay(200);
+        //if(ref.r3 < 10000 && ref.l3 < 10000)
+        //{
+            while((float)ref.l1/(float)ref.r1 > 1.05)
+            {
+                reflectance_read(&ref);
+                motor_turn(50, 200, 0);
+                    
+            }
+    
+
+            while ((ref.l1/ref.r1) < 1)
+            {
+                reflectance_read(&ref);   
+                motor_turn(200, 50, 0);
+                    
+            }
+            
+        //}
+        /*else
+        {
+            count++;
+        }*/
+        vTaskDelay(10);
     }
 }   
 #endif
