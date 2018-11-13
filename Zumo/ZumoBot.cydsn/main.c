@@ -613,16 +613,8 @@ void zmain(void)
 
 void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay)
 {
-    if(dir == DIR) 
-    {
-        MotorDirLeft_Write(1);      // Sets left tread to reverse
-        MotorDirRight_Write(0);
-    }
-    if(dir == !DIR) 
-    {
-        MotorDirLeft_Write(0);      
-        MotorDirRight_Write(1);     // Sets right tread to reverse
-    }
+    MotorDirLeft_Write(!dir); // dir 0 turns left, dir 1 turns right.
+    MotorDirRight_Write(dir);
     PWM_WriteCompare1(l_speed); 
     PWM_WriteCompare2(r_speed); 
     vTaskDelay(delay);
