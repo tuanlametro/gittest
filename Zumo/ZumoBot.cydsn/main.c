@@ -462,7 +462,7 @@ void zmain(void)
 void zmain(void)
 {
     int count = 0, last = 0, least = 5000;
-    float current = 0, motor_ratio = 0, left = 0, right = 0;
+    float light_ratio = 0, motor_ratio = 0, left = 0, right = 0;
     struct sensors_ ref;
     struct sensors_ dig;
     motor_start();
@@ -479,13 +479,14 @@ void zmain(void)
             least = ref.l3;
             if(ref.r3 < least)
             {
-                least = ref.r3;
+                least = ref.r3 - 10; // We minus 10 or so to try and avoid the middle sensors ever reading a lower white value.
             }
         }
+        
         left = ref.l1 - least;
         right = ref.r1 - least; //Here if least is ever bigger than r1, we have a problem.
         
-        current = left / right; 
+        light_ratio = left / right; 
         motor_ratio = right / left;
         motor_turn(150, 150, 0);
         /*if(ref.l3 > 15000 && ref.r3 > 15000)
@@ -494,11 +495,11 @@ void zmain(void)
         }*/
         //else
         //{
-            if(current > 1)
+            if(light_ratio > 1)
             { 
                 motor_turn((motor_ratio)*150, 150, 0); 
             }
-            else if(current < 1)
+            else if(light_ratio < 1)
             {        
                 motor_turn(150, (motor_ratio)*150, 0); 
             }
