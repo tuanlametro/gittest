@@ -461,14 +461,14 @@ void zmain(void)
 //reflectance
 void zmain(void)
 {
-    int count = 0, last = 0, least = 5000;
-    float light_ratio = 0, motor_ratio = 0, left = 0, right = 0;
+    int count = 0, last = 0, least = 6000;
+    float light_ratio = 0;
     struct sensors_ ref;
-    struct sensors_ dig;
+    struct sensors_ dig; // We currently are not using this
     motor_start();
     motor_forward(0,0);
     reflectance_start();
-    reflectance_set_threshold(9000, 9000, 11000, 11000, 9000, 9000); // set center sensor threshold to 11000 and others to 9000
+    reflectance_set_threshold(9000, 9000, 11000, 11000, 9000, 9000); // We currently are not using this
     
     while(count != 2)
     {
@@ -482,12 +482,8 @@ void zmain(void)
                 least = ref.r3 - 10; // We minus 10 or so to try and avoid the middle sensors ever reading a lower white value.
             }
         }
-        
-        left = ref.l1 - least;
-        right = ref.r1 - least; //Here if least is ever bigger than r1, we have a problem.
-        
-        light_ratio = left / right; 
-        motor_ratio = right / left;
+
+        light_ratio = ((float)ref.l1 - least) / (ref.r1 - least); //If least is ever bigger than or equal to r1, we have a problem.
         motor_turn(150, 150, 0);
         /*if(ref.l3 > 15000 && ref.r3 > 15000)
         {
@@ -497,11 +493,11 @@ void zmain(void)
         //{
             if(light_ratio > 1)
             { 
-                motor_turn((motor_ratio)*150, 150, 0); 
+                motor_turn(150/light_ratio, 150, 0); 
             }
             else if(light_ratio < 1)
             {        
-                motor_turn(150, (motor_ratio)*150, 0); 
+                motor_turn(150, 150/light_ratio, 0); 
             }
         //}
         // last = Will be useful for tracking black starting and stoppung lines.
