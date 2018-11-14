@@ -461,7 +461,8 @@ void zmain(void)
 //reflectance
 void zmain(void)
 {
-    int count = 0, current = 0;
+    int count = 0, last = 0;
+    float current = 0;
     struct sensors_ ref;
     struct sensors_ dig;
     motor_start();
@@ -469,36 +470,32 @@ void zmain(void)
     reflectance_start();
     reflectance_set_threshold(9000, 9000, 11000, 11000, 9000, 9000); // set center sensor threshold to 11000 and others to 9000
     
-    while(count != 4)
+    while(count != 2)
     {
-        // read raw sensor values
         reflectance_read(&ref);
+        if(ref.l1 > 18000)
+        {
+            ref.l1 = 18000;
+        }
         
-        motor_turn(100, 100, 0);
-        
-        //if(ref.r3 < 10000 && ref.l3 < 10000)
-        //{
-            while((float)ref.l1/(float)ref.r1 > 1.05)
-            {
-                reflectance_read(&ref);
-                motor_turn(50, 200, 0);
-                    
-            }
-    
-
-            while ((ref.l1/ref.r1) < 1)
-            {
-                reflectance_read(&ref);   
-                motor_turn(200, 50, 0);
-                    
-            }
-            
-        //}
-        /*else
+        current = (float)ref.l1/ref.r1;
+        motor_turn(150, 150, 0);
+        /*if(ref.l3 > 15000 && ref.r3 > 15000)
         {
             count++;
         }*/
-        vTaskDelay(10);
+        //else
+        //{
+            if(current > 1.02)
+            { 
+                motor_turn((current - 1)*150, 150, 0); 
+            }
+            else if(current < 0.98)
+            {        
+                motor_turn(150, (1 - current)*150, 0); 
+            }
+        //}
+        last = ref.l1 + ref.r3;
     }
 }   
 #endif
