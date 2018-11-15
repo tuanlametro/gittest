@@ -462,62 +462,43 @@ void zmain(void)
 //reflectance
 void zmain(void)
 {
-    int last = 0, most = 18000, count = 3;
+    int last = 0, least = 5000, most = 20000, count = 3, left = 0, right = 0;
     float light_ratio = 0;
     struct sensors_ ref;
     struct sensors_ dig; 
     motor_start();
     motor_forward(0,0);
     reflectance_start();
-    reflectance_set_threshold(7500, 7500, 18000, 18000, 7500, 7500);
+    reflectance_set_threshold(15000, 15000, 15000, 15000, 15000, 15000);
     
     while(1)
     {
         reflectance_read(&ref);
-        reflectance_digital(&dig); 
-
-            
-            if(ref.l1 >= most)
-            {
-                ref.l1 = most;
-            }
-            else if(ref.r1 >= most)
-            {
-                ref.r1 = most;
-            }
-            light_ratio = (float)ref.l1 / ref.r1; 
-            
-            if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
-            { 
-                motor_turn(MAXSPEED/light_ratio, MAXSPEED, 0);
-            }
-            else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
-            {
-                motor_turn((MAXSPEED/light_ratio)*0.7, MAXSPEED, 0);
-            }
-            else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
-            {
-                motor_turn(0, MAXSPEED, 0);
-            }
-            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
-            {
-                motor_turn(MAXSPEED, MAXSPEED*light_ratio, 0);
-            }
-            else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))
-            {        
-                motor_turn(MAXSPEED, (MAXSPEED*light_ratio)*0.7, 0); 
-            }
-            else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)
-            {        
-                motor_turn(MAXSPEED, 0, 0); 
-            }
-            else if(light_ratio == 1.0)
-            {
-                motor_turn(MAXSPEED, MAXSPEED, 0);
-            }
-            //last = dig.l3 + dig.r3;
+        reflectance_digital(&dig);   
+        if(ref.l1 >= most) ref.l1 = most;
+        if(ref.l1 <= least) ref.l1 = least;
+        if(ref.l2 >= most) ref.l2 = most;
+        if(ref.l2 <= least) ref.l2 = least;
+        if(ref.l3 >= most) ref.l3 = most;
+        if(ref.l3 <= least) ref.l3 = least;
+        if(ref.r1 >= most) ref.r1 = most;
+        if(ref.r1 <= least) ref.r1 = least;
+        if(ref.r2 >= most) ref.r2 = most;
+        if(ref.r2 <= least) ref.r2 = least;
+        if(ref.r3 >= most) ref.r3 = most;
+        if(ref.r3 <= least) ref.r3 = least;
+        // Our min and max values on each side are now 15000 (3 white) and 60000 (3 black), with a range of 45000 
+        // 45000 / 255 (max speed) gives roughly 177. So every 177 change changes the speed by 1.
+        left = (60000 - ref.l1 - ref.l2 - ref.l3)/177;
+        right = (60000 - ref.r1 - ref.r2 - ref.r3)/177;
+        // We take the max (60000) and subtract the totals of left and right, then divide the difference by 177.
+        if(dig.l3 == 1 && dig.l2 == 1 && dig.l1 == 1 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0) 
+            motor_turn(0, MAXSPEED, 0);
+        else if(dig.l3 == 0 && dig.l2 == 0 && dig.l1 == 1 && dig.r1 == 1 && dig.r2 == 1 && dig.r3 == 1)
+            motor_turn(MAXSPEED, 0, 0);
+        else
+            motor_turn(left, right, 0);
     }
-        // last = Will be useful for tracking black starting and stopping lines.
 }  
 #endif
 
