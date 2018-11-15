@@ -51,6 +51,7 @@
 #define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
 #define SIZE 6
 #define DIR 0 // 0 is left, 1 is right
+#define MAXSPEED 254
 /**
  * @file    main.c
  * @brief   
@@ -461,48 +462,141 @@ void zmain(void)
 //reflectance
 void zmain(void)
 {
-    int count = 0, last = 0, least = 6000;
+    int last = 0, least = 5000, most = 20000;
     float light_ratio = 0;
     struct sensors_ ref;
     struct sensors_ dig; // We currently are not using this
     motor_start();
     motor_forward(0,0);
     reflectance_start();
-    reflectance_set_threshold(9000, 9000, 11000, 11000, 9000, 9000); // We currently are not using this
+    reflectance_set_threshold(7500, 7500, 6000, 6000, 7500, 7500); // We currently are not using this
     
-    while(count != 2)
+    while(1)
     {
+        int speed = 0, count = 0;
         reflectance_read(&ref);
-        
-        if(ref.l3 < least || ref.r3 < least) // Constantly checks for lowest white value to avoid negative numbers.
+        reflectance_digital(&dig); 
+        if(ref.l1 >= most)
         {
-            least = ref.l3;
-            if(ref.r3 < least)
-            {
-                least = ref.r3 - 10; // We minus 10 or so to try and avoid the middle sensors ever reading a lower white value.
-            }
+            ref.l1 = most;
+        }
+        
+        else if(ref.r1 >= most)
+        {
+            ref.r1 = most;
         }
 
-        light_ratio = ((float)ref.l1 - least) / (ref.r1 - least); //If least is ever bigger than or equal to r1, we have a problem.
-        motor_turn(150, 150, 0);
+        light_ratio = (float)ref.l1 / ref.r1; //If least is ever bigger than or equal to r1, we have a problem.
+        //motor_turn(150, 150, 0);
         /*if(ref.l3 > 15000 && ref.r3 > 15000)
         {
             count++;
         }*/
         //else
         //{
-            if(light_ratio > 1)
+        while(count < 10)
+        {
+            speed = 176;
+            reflectance_read(&ref);
+            reflectance_digital(&dig); 
+            if(ref.l1 >= most)
+            {
+                ref.l1 = most;
+            }
+            
+            else if(ref.r1 >= most)
+            {
+                ref.r1 = most;
+            }
+
+            light_ratio = (float)ref.l1 / ref.r1; 
+            if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
             { 
-                motor_turn(150/light_ratio, 150, 0); 
+                motor_turn(speed/light_ratio, speed, 0);
+                count++;
             }
-            else if(light_ratio < 1)
+            else if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 1 && dig.l3 == 0)
+            {
+                motor_turn((speed*0.5)/light_ratio, speed, 0);
+            }
+            else if(light_ratio > 1.0 && dig.l2 == 1 && dig.l3 == 1)
+            {
+                motor_turn(0,  MAXSPEED, 0);
+            }
+            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+            {
+                motor_turn(speed, speed*light_ratio, 0);
+                count = 0;
+            }
+            else if(light_ratio < 1.0 && dig.l1 == 1 && dig.r2 == 1 && dig.r3 == 0)
             {        
-                motor_turn(150, 150/light_ratio, 0); 
+                motor_turn(speed, (speed*0.5)*light_ratio, 0); 
+                count = 0;
             }
-        //}
-        // last = Will be useful for tracking black starting and stoppung lines.
+            else if(light_ratio < 1.0 && dig.l1 == 1 && dig.r2 == 1 && dig.r3 == 1)
+            {        
+                motor_turn(speed, 0, 0); 
+                count = 0;
+            }
+            else if(light_ratio == 1.0)
+            {
+                motor_turn(speed, speed, 0);
+            }
+        }
+        
+        while(count >= 5)
+        {
+            speed = 250;
+            reflectance_read(&ref);
+            reflectance_digital(&dig); 
+            if(ref.l1 >= most)
+            {
+                ref.l1 = most;
+            }
+            
+            else if(ref.r1 >= most)
+            {
+                ref.r1 = most;
+            }
+
+            light_ratio = (float)ref.l1 / ref.r1; 
+            if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
+            { 
+                motor_turn(speed/light_ratio, speed, 0);
+            }
+            else if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 1 && dig.l3 == 0)
+            {
+                motor_turn((speed*0.5)/light_ratio, speed, 0);
+                count = 0;
+            }
+            else if(light_ratio > 1.0 && dig.l2 == 1 && dig.l3 == 1)
+            {
+                motor_turn(0,  speed, 0);
+                count = 0;
+            }
+            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+            {
+                motor_turn(speed, speed*light_ratio, 0);
+                count = 0;
+            }
+            else if(light_ratio < 1.0 && dig.l1 == 1 && dig.r2 == 1 && dig.r3 == 0)
+            {        
+                motor_turn(speed, (speed*0.5)*light_ratio, 0); 
+                count = 0;
+            }
+            else if(light_ratio < 1.0 && dig.l1 == 1 && dig.r2 == 1 && dig.r3 == 1)
+            {        
+                motor_turn(speed, 0, 0); 
+                count = 0;
+            }
+            else if(light_ratio == 1.0)
+            {
+                motor_turn(speed, speed, 0);
+            }
+        }
     }
-}   
+        // last = Will be useful for tracking black starting and stopping lines.
+}  
 #endif
 
 #if 0
