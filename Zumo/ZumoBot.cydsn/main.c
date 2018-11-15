@@ -51,13 +51,13 @@
 #define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
 #define SIZE 6
 #define DIR 0 // 0 is left, 1 is right
-#define MAXSPEED 254
+#define MAXSPEED 255
 /**
  * @file    main.c
  * @brief   
  * @details  ** Enable global interrupt since Zumo library uses interrupts. **<br>&nbsp;&nbsp;&nbsp;CyGlobalIntEnable;<br>
 */
-void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay);
+void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay);
 bool power(void);
 bool button = false;
 
@@ -228,7 +228,7 @@ void ledloop()
 void zmain(void)
 {
     motor_start();              // enable motor controller
-    motor_forward(0,0);         // set speed to zero to stop motors
+    motor_forward(0,0);         // set MAXSPEED to zero to stop motors
 
     vTaskDelay(5000);
     motor_turn(177,200,2000);     // moving forward
@@ -462,138 +462,60 @@ void zmain(void)
 //reflectance
 void zmain(void)
 {
-    int last = 0, least = 5000, most = 20000;
+    int last = 0, most = 18000, count = 3;
     float light_ratio = 0;
     struct sensors_ ref;
-    struct sensors_ dig; // We currently are not using this
+    struct sensors_ dig; 
     motor_start();
     motor_forward(0,0);
     reflectance_start();
-    reflectance_set_threshold(7500, 7500, 6000, 6000, 7500, 7500); // We currently are not using this
+    reflectance_set_threshold(7500, 7500, 18000, 18000, 7500, 7500);
     
     while(1)
     {
-        int speed = 0, count = 0;
         reflectance_read(&ref);
         reflectance_digital(&dig); 
-        if(ref.l1 >= most)
-        {
-            ref.l1 = most;
-        }
-        
-        else if(ref.r1 >= most)
-        {
-            ref.r1 = most;
-        }
 
-        light_ratio = (float)ref.l1 / ref.r1; //If least is ever bigger than or equal to r1, we have a problem.
-        //motor_turn(150, 150, 0);
-        /*if(ref.l3 > 15000 && ref.r3 > 15000)
-        {
-            count++;
-        }*/
-        //else
-        //{
-        while(count < 10)
-        {
-            speed = 176;
-            reflectance_read(&ref);
-            reflectance_digital(&dig); 
+            
             if(ref.l1 >= most)
             {
                 ref.l1 = most;
             }
-            
             else if(ref.r1 >= most)
             {
                 ref.r1 = most;
             }
-
             light_ratio = (float)ref.l1 / ref.r1; 
-            if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
-            { 
-                motor_turn(speed/light_ratio, speed, 0);
-                count++;
-            }
-            else if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 1 && dig.l3 == 0)
-            {
-                motor_turn((speed*0.5)/light_ratio, speed, 0);
-            }
-            else if(light_ratio > 1.0 && dig.l2 == 1 && dig.l3 == 1)
-            {
-                motor_turn(0,  MAXSPEED, 0);
-            }
-            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
-            {
-                motor_turn(speed, speed*light_ratio, 0);
-                count = 0;
-            }
-            else if(light_ratio < 1.0 && dig.l1 == 1 && dig.r2 == 1 && dig.r3 == 0)
-            {        
-                motor_turn(speed, (speed*0.5)*light_ratio, 0); 
-                count = 0;
-            }
-            else if(light_ratio < 1.0 && dig.l1 == 1 && dig.r2 == 1 && dig.r3 == 1)
-            {        
-                motor_turn(speed, 0, 0); 
-                count = 0;
-            }
-            else if(light_ratio == 1.0)
-            {
-                motor_turn(speed, speed, 0);
-            }
-        }
-        
-        while(count >= 5)
-        {
-            speed = 250;
-            reflectance_read(&ref);
-            reflectance_digital(&dig); 
-            if(ref.l1 >= most)
-            {
-                ref.l1 = most;
-            }
             
-            else if(ref.r1 >= most)
-            {
-                ref.r1 = most;
-            }
-
-            light_ratio = (float)ref.l1 / ref.r1; 
             if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
             { 
-                motor_turn(speed/light_ratio, speed, 0);
+                motor_turn(MAXSPEED/light_ratio, MAXSPEED, 0);
             }
-            else if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 1 && dig.l3 == 0)
+            else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
             {
-                motor_turn((speed*0.5)/light_ratio, speed, 0);
-                count = 0;
+                motor_turn((MAXSPEED*0.70)/light_ratio, MAXSPEED, 0);
             }
-            else if(light_ratio > 1.0 && dig.l2 == 1 && dig.l3 == 1)
+            else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
             {
-                motor_turn(0,  speed, 0);
-                count = 0;
+                motor_turn(0, MAXSPEED, 0);
             }
             else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
             {
-                motor_turn(speed, speed*light_ratio, 0);
-                count = 0;
+                motor_turn(MAXSPEED, MAXSPEED*light_ratio, 0);
             }
-            else if(light_ratio < 1.0 && dig.l1 == 1 && dig.r2 == 1 && dig.r3 == 0)
+            else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))
             {        
-                motor_turn(speed, (speed*0.5)*light_ratio, 0); 
-                count = 0;
+                motor_turn(MAXSPEED, (MAXSPEED*0.70)*light_ratio, 0); 
             }
-            else if(light_ratio < 1.0 && dig.l1 == 1 && dig.r2 == 1 && dig.r3 == 1)
+            else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)
             {        
-                motor_turn(speed, 0, 0); 
-                count = 0;
+                motor_turn(MAXSPEED, 0, 0); 
             }
             else if(light_ratio == 1.0)
             {
-                motor_turn(speed, speed, 0);
+                motor_turn(MAXSPEED, MAXSPEED, 0);
             }
-        }
+            //last = dig.l3 + dig.r3;
     }
         // last = Will be useful for tracking black starting and stopping lines.
 }  
@@ -604,7 +526,7 @@ void zmain(void)
 void zmain(void)
 {
     motor_start();              // enable motor controller
-    motor_forward(0,0);         // set speed to zero to stop motors
+    motor_forward(0,0);         // set MAXSPEED to zero to stop motors
 
     vTaskDelay(3000);
     
@@ -724,12 +646,12 @@ void zmain(void)
 
 // Our own functions
 
-void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay)
+void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay)
 {
     MotorDirLeft_Write(!dir); // dir 0 turns left, dir 1 turns right.
     MotorDirRight_Write(dir);
-    PWM_WriteCompare1(l_speed); 
-    PWM_WriteCompare2(r_speed); 
+    PWM_WriteCompare1(l_MAXSPEED); 
+    PWM_WriteCompare2(r_MAXSPEED); 
     vTaskDelay(delay);
     
     MotorDirLeft_Write(0);          // Returns both motors to forward after turn is complete    
