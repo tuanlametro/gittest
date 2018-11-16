@@ -458,7 +458,7 @@ void zmain(void)
  }   
 #endif
 
-#if 1
+#if 0
 //reflectance
 void zmain(void)
 {
@@ -493,7 +493,7 @@ void zmain(void)
             }
             else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
             {
-                motor_turn((MAXSPEED/light_ratio)*0.7, MAXSPEED, 0);
+                motor_turn((MAXSPEED/light_ratio)*0.6, MAXSPEED, 0);
             }
             else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
             {
@@ -505,7 +505,7 @@ void zmain(void)
             }
             else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))
             {        
-                motor_turn(MAXSPEED, (MAXSPEED*light_ratio)*0.7, 0); 
+                motor_turn(MAXSPEED, (MAXSPEED*light_ratio)*0.6, 0); 
             }
             else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)
             {        
@@ -515,9 +515,7 @@ void zmain(void)
             {
                 motor_turn(MAXSPEED, MAXSPEED, 0);
             }
-            //last = dig.l3 + dig.r3;
     }
-        // last = Will be useful for tracking black starting and stopping lines.
 }  
 #endif
 
@@ -644,6 +642,96 @@ void zmain(void)
  }   
 #endif
 
+#if 1
+struct sensors_ dig;
+struct sensors_ ref;
+
+void update_sensors(void);
+void wait_for_remote_pressed(void);
+void drive_to_color(int i) ;
+int count = 0;
+int last = 0, most = 18000;
+float light_ratio = 0;
+bool white = false;
+
+void setup_motor() 
+{
+    motor_start();
+    motor_forward(0,0);
+    IR_Start();
+    IR_flush();
+    reflectance_start();
+    reflectance_set_threshold(15000,9000,11000,11000,9000,15000);
+}
+
+void zmain(void) 
+{
+    setup_motor();
+    /*while(SW1_Read() == 1)
+    {
+        vTaskDelay
+    }*/
+    IR_wait();
+    while(count < 3)
+    {
+        reflectance_read(&ref);
+        reflectance_digital(&dig); 
+        if(dig.l3 == 1 && dig.r3 == 1)
+        {
+            if(white == true)
+            {
+                Beep(10, 100);
+                count++;
+            }
+            white = false;
+        }
+        else if(dig.l3 == 0 && dig.r3 == 0)
+        {
+            white = true;
+        }
+           
+        if(ref.l1 >= most)
+        {
+            ref.l1 = most;
+        }
+        else if(ref.r1 >= most)
+            {
+                ref.r1 = most;
+            }
+            light_ratio = (float)ref.l1 / ref.r1; 
+            
+            if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
+            { 
+                motor_turn(MAXSPEED/light_ratio, MAXSPEED, 0);
+            }
+            else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
+            {
+                motor_turn((MAXSPEED/light_ratio)*0.6, MAXSPEED, 0);
+            }
+            else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
+            {
+                motor_turn(0, MAXSPEED, 0);
+            }
+            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+            {
+                motor_turn(MAXSPEED, MAXSPEED*light_ratio, 0);
+            }
+            else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))
+            {        
+                motor_turn(MAXSPEED, (MAXSPEED*light_ratio)*0.6, 0); 
+            }
+            else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)
+            {        
+                motor_turn(MAXSPEED, 0, 0); 
+            }
+            else if(light_ratio == 1.0)
+            {
+                motor_turn(MAXSPEED, MAXSPEED, 0);
+            }
+    }
+    motor_forward(0,0);
+}
+#endif
 // Our own functions
 
 void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay)
