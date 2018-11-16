@@ -28,6 +28,7 @@
     I2C, UART, Serial<br>
     </p>
 */
+
 #include <project.h>
 #include <stdio.h>
 #include "FreeRTOS.h"
@@ -46,204 +47,94 @@
 #include <sys/time.h>
 #include "serial1.h"
 #include <unistd.h>
-#define coeff 5/4095; /*Vref divided by the number of steps between 0 and max*/
-#define realv 5/3; /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
 /**
  * @file    main.c
  * @brief   
  * @details  ** Enable global interrupt since Zumo library uses interrupts. **<br>&nbsp;&nbsp;&nbsp;CyGlobalIntEnable;<br>
 */
-void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay);
 
-#if 1
-// Week 2 Assignment 2, by Lily
+#if 0
+// Hello World!
+void zmain(void)
+{
+    printf("\nHello, World!\n");
+
+    while(true)
+    {
+        vTaskDelay(100); // sleep (in an infinite loop)
+    }
+ }   
+#endif
+
+#if 0
+// Name and age
 void zmain(void)
 {
     char name[32];
     int age;
     
-    TickType_t time_start, time_end, total_time;
     
     printf("\n\n");
-<<<<<<< HEAD
     
-    //printf("Enter your name: ");
-    
+    printf("Enter your name: ");
     //fflush(stdout);
-    //scanf("%s", name);
-=======
-
->>>>>>> master
+    scanf("%s", name);
     printf("Enter your age: ");
-    time_start = xTaskGetTickCount();
+    //fflush(stdout);
     scanf("%d", &age);
-    time_end = xTaskGetTickCount();
-    total_time = time_end - time_start;
-    if(total_time<3000) 
-    {
-        if(age <= 21)
-        {
-            printf("Super fast dude!");
-        }
-        else if(age >= 22 && age <= 50)
-        {
-            printf("Be quick or be dead");
-        }
-        else 
-        {
-            printf("Still going strong");
-        }
-    }
-    else if(total_time >=3000 && total_time <=5000) 
-    {
-        if(age <= 21)
-        {
-            printf("So mediocre.");
-        }
-        else if(age >= 22 && age <= 50)
-        {
-<<<<<<< HEAD
-            printf("You’re so average.");
-=======
-            printf("You\’re so average.");
->>>>>>> master
-        }
-        else 
-        {
-            printf("You are doing ok for your age.");
-        }
-    }
-    else 
-    {
-        if(age <= 21)
-        {
-            printf("My granny is faster than you!");
-        }
-        else if(age >= 22 && age <= 50)
-        {
-            printf("Have you been smoking something illegal? ");
-        }
-        else 
-        {
-            printf("Do they still allow you to drive?");
-        }
-    }
-<<<<<<< HEAD
-    //printf("You are [%s], age = %d\n", name, age);
-=======
->>>>>>> master
+    
+    printf("You are [%s], age = %d\n", name, age);
 
-    /*while(true)
+    while(true)
     {
         BatteryLed_Write(!SW1_Read());
         vTaskDelay(100);
-    }*/
-<<<<<<< HEAD
+    }
  }   
-=======
- } 
->>>>>>> master
 #endif
 
 
 #if 0
 //battery level//
-void batcheck();
-void batterytest();
-void ledloop();
-int16 adcresult = 0;
-float volts = 0.0;
-bool warning = false;
-
 void zmain(void)
-{   
-
-    ADC_Battery_Start();
-    ADC_Battery_StartConvert();
-    while(1)
-    {
-        if (warning == false)
-        {
-            batcheck();
-        }
-        else if (warning == true)
-        {
-            ledloop();
-        }
-    }
-}
-
-void batcheck()
 {
-    while(warning == false)
+    ADC_Battery_Start();        
+
+    int16 adcresult =0;
+    float volts = 0.0;
+
+    printf("\nBoot\n");
+
+    //BatteryLed_Write(1); // Switch led on 
+    BatteryLed_Write(0); // Switch led off 
+    //uint8 button;
+    //button = SW1_Read(); // read SW1 on pSoC board
+    // SW1_Read() returns zero when button is pressed
+    // SW1_Read() returns one when button is not pressed
+
+    for(;;)
     {
-        ADC_Battery_IsEndConversion(ADC_Battery_WAIT_FOR_RESULT); // wait for ADC converted value
-        adcresult = ADC_Battery_GetResult16(); // get the ADC value (0 - 4095)
-        float converted = adcresult*coeff;
-        volts = converted * realv;
-        printf("%d %f\r\n",adcresult, volts);
-        if (volts <= 4.0)
-        {
-            warning = true;
+        char msg[80];
+        ADC_Battery_StartConvert(); // start sampling
+        if(ADC_Battery_IsEndConversion(ADC_Battery_WAIT_FOR_RESULT)) {   // wait for ADC converted value
+            adcresult = ADC_Battery_GetResult16(); // get the ADC value (0 - 4095)
+            // convert value to Volts
+            // you need to implement the conversion
+            
+            // Print both ADC results and converted value
+            printf("%d %f\r\n",adcresult, volts);
         }
         vTaskDelay(500);
     }
-}
-
-void ledloop()
-{
-    uint8 i = 0;
-    
-    while(warning == true)
-    {
-        Beep(500, i);
-        i++;
-        BatteryLed_Write(1);
-        vTaskDelay(500);
-        Beep(500, i);
-        i++;
-        BatteryLed_Write(0);
-        vTaskDelay(500);
-        if(SW1_Read() == 0)
-        {
-            warning = false;
-        }
-    }
-}
-
+ }   
 #endif
 
 #if 0
 // button
 void zmain(void)
 {
-    uint8 button = SW1_Read();
-    void S()
-    {
-        for(int i = 0; i <= 2; i++)
-        {
-            printf("S");
-            BatteryLed_Write(1);
-            vTaskDelay(100);
-            BatteryLed_Write(0);
-            vTaskDelay(100);  
-        }
-    }
-    
-    void O()
-    {
-        for(int i = 0; i <= 2; i++)
-        {
-            printf("O");
-            BatteryLed_Write(1);
-            vTaskDelay(300);
-            BatteryLed_Write(0);
-            vTaskDelay(100);  
-        }
-    }
-    while(button == 0) 
-    {
-        /* printf("Press button within 5 seconds!\n");
+    while(1) {
+        printf("Press button within 5 seconds!\n");
         int i = 50;
         while(i > 0) {
             if(SW1_Read() == 0) {
@@ -258,10 +149,7 @@ void zmain(void)
         }
         else {
             printf("You didn't press the button\n");
-        }*/
-        S();
-        O();
-        S();
+        }
     }
 }
 #endif
@@ -297,42 +185,20 @@ void zmain(void)
  }   
 #endif
 
-#if 0
 
+#if 0
+//ultrasonic sensor//
 void zmain(void)
 {
-    uint8_t button = 0;
-    while(1)
-    {
-        Ultra_Start(); 
-        motor_start();
-        motor_forward(0,0);
-        if(SW1_Read() == 0)
-        {
-            button = !button;
-        }
-        
-                                
-        while(button == 1) 
-        {
-            int d = Ultra_GetDistance(); // d is distance in cm
-            printf("distance = %d\r\n", d);
-            if( d <= 10 )
-            {
-                Beep(100, 100);
-                motor_backward(0,0);
-                motor_turn(150, 75, 500);
-                //motor_tank_turn('l', 100, 100, 500);
-            }
-            else 
-            {
-                motor_forward(150, 0);
-            }
-        }
-    }
-}  
+    Ultra_Start();                          // Ultra Sonic Start function
     
-
+    while(1) {
+        int d = Ultra_GetDistance();
+        // Print the detected distance (centimeters)
+        printf("distance = %d\r\n", d);
+        vTaskDelay(200);
+    }
+}   
 #endif
 
 #if 0
@@ -359,6 +225,8 @@ void zmain(void)
  }   
 #endif
 
+
+
 #if 0
 //IR receiver - read raw data
 void zmain(void)
@@ -384,6 +252,7 @@ void zmain(void)
     }    
  }   
 #endif
+
 
 #if 0
 //reflectance
@@ -414,26 +283,20 @@ void zmain(void)
 }   
 #endif
 
+
 #if 0
-//motor this is what lily made
-void tankturn(uint8 l_speed, uint8 r_speed, uint32 delay);
-void goodturn(uint8 l_speed, uint8 r_speed, uint32 delay);
+//motor
 void zmain(void)
 {
-    motor_start(1);              // enable motor controller
+    motor_start();              // enable motor controller
     motor_forward(0,0);         // set speed to zero to stop motors
 
-    vTaskDelay(5000);
+    vTaskDelay(3000);
     
-    goodturn(177,200,2000);     // moving forward
-    tankturn(150,150,330); 
-    goodturn(177,200,1700);     // moving forward
-    tankturn(150,150,330);     // turn right
-    goodturn(177,200,1800);     // moving forward
-    tankturn(150,150,355);     // turn right   
-    goodturn(140,80,2700);     // turn right
-    goodturn(177,200,500);     // turn right
-    //motor_backward(100,2000);    // moving backward
+    motor_forward(100,2000);     // moving forward
+    motor_turn(200,50,2000);     // turn
+    motor_turn(50,200,2000);     // turn
+    motor_backward(100,2000);    // moving backward
      
     motor_forward(0,0);         // stop motors
 
@@ -444,35 +307,16 @@ void zmain(void)
 
     }
 }
-void tankturn(uint8 l_speed, uint8 r_speed, uint32 delay)
-{
-    MotorDirLeft_Write(0);      // set LeftMotor forward mode
-    MotorDirRight_Write(1);
-    PWM_WriteCompare1(l_speed); 
-    PWM_WriteCompare2(r_speed); 
-    vTaskDelay(delay);
-}
-void goodturn(uint8 l_speed, uint8 r_speed, uint32 delay)
-{
-    MotorDirLeft_Write(0);      // set LeftMotor forward mode
-    MotorDirRight_Write(0);
-    PWM_WriteCompare1(l_speed); 
-    PWM_WriteCompare2(r_speed); 
-    vTaskDelay(delay);
-}
-    
 #endif
 
 #if 0
-/* Example of how to use the Accelerometer!!!*/
+/* Example of how to use te Accelerometer!!!*/
 void zmain(void)
 {
     struct accData_ data;
     
     printf("Accelerometer test...\n");
 
-    motor_start();              // enable motor controller
-    motor_forward(40,10000);
     if(!LSM303D_Start()){
         printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
         vTaskSuspend(NULL);
@@ -512,6 +356,7 @@ void zmain(void)
     }
  }   
 #endif
+
 
 #if 0
 void zmain(void)
@@ -588,58 +433,127 @@ void zmain(void)
  }   
 #endif
 
-// Put functions here for now
-
-void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
+#if 0
+void zmain(void)
 {
-    if(direction == 'l') 
-    {
-        MotorDirLeft_Write(1);      // Sets left tread to reverse
-        MotorDirRight_Write(0);
-    }
-    if(direction == 'r') 
-    {
-        MotorDirLeft_Write(0);      
-        MotorDirRight_Write(1);     // Sets right tread to reverse
-    }
-    PWM_WriteCompare1(l_speed); 
-    PWM_WriteCompare2(r_speed); 
-    vTaskDelay(delay);
+    struct sensors_ ref;
+    struct sensors_ dig;
     
-    MotorDirLeft_Write(0);          // Returns both motors to forward after turn is complete    
-    MotorDirRight_Write(0); 
+    motor_start();
+    motor_forward(0,0);
+    IR_Start();
+    IR_flush(); // clear IR receive buffer
+
+    reflectance_start();
+    reflectance_set_threshold(6000, 9000, 11000, 11000, 9000, 6000); // set center sensor threshold to 11000 and others to 9000
+    
+    uint8 button = 0;  
+    bool white = true; 
+    int count = 0;
+    for(;;)
+    {
+        //IR_wait();
+    	if(SW1_Read() == 0)
+        {
+            button = !button;
+        }
+        
+    	while (button == 1 && white == true)
+	    {
+            reflectance_read(&ref);
+            reflectance_digital(&dig);
+       
+            /*if(SW1_Read() == 0)
+            {
+                button = !button;
+            }*/
+            motor_turn(200,180,0);
+            
+            if (dig.r3 == 1 && dig.l3 == 1)
+    	    {	
+    	        white = !white;
+                count++;
+    	        motor_forward(0,0);
+    	    }
+        }   
+    }
+
+	/*if (dig.r3 == 1 && dig.l3 == 1 && )
+	{
+	count++;
+	}
+		 
+	if(count == 3)
+    {
+		motor_forward(0,0);
+	} */
+}
+#endif
+ 
+#if 1
+struct sensors_ dig;
+struct sensors_ ref;
+
+void update_sensors(void);
+void wait_for_remote_pressed(void);
+void drive_to_color(int i) ;
+
+void setup_motor() {
+  motor_start();
+  motor_forward(0,0);
+  IR_Start();
+  IR_flush();
+  reflectance_start();
+  reflectance_set_threshold(15000,9000,11000,11000,9000,15000);
 }
 
-#if 0
-// Assignment 1
-void zmain(void){
-    uint8 button = 1;
-    while(1){ 
-        button = SW1_Read();
-        if (button == 0){
-            for (int i = 0; i < 3; i++){
-                BatteryLed_Write(1);
-                vTaskDelay(500);
-                BatteryLed_Write(0);
-                vTaskDelay(500);
-            }
-        
-            for (int i = 0; i < 3; i++){  
-                BatteryLed_Write(1);
-                vTaskDelay(1500);
-                BatteryLed_Write(0);
-                vTaskDelay(500);
-            }
-        
-            for (int i = 0; i < 3; i++){
-                BatteryLed_Write(1);
-                vTaskDelay(500);
-                BatteryLed_Write(0);
-                vTaskDelay(500);
-            }
-        }
+void button(void) 
+{
+  while(SW1_Read() == 1) 
+    {
     }
-}    
+}
+
+void drive_to_color(int i) 
+{
+    while(dig.l3 == !i && dig.r3 == !i) 
+    {
+        reflectance_digital(&dig);
+        motor_forward(80,80);
+    }
+}
+
+void zmain(void) 
+{
+    setup_motor();
+    button();
+    drive_to_color(1);
+    motor_forward(0,0);
+    IR_wait();
+
+    for(int i=0;i<3;i++){
+    drive_to_color(0);
+    drive_to_color(1);
+  }
+  motor_forward(0,0);
+}
+
 #endif
+
+
+
+/*void control_motors(void) {
+  if (sensor.r1 == BLACK && sensor.l1 == BLACK)
+    motor_forward(100, 100)
+  else if (sensor.r1 == WHITE) {
+    motor_forward(80,100)
+  } else if (sensor.l1 == WHITE) {
+    motor_forward(100,80)
+  }
+}*/
+
+
+
+
 
 /* [] END OF FILE */
