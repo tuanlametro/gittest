@@ -492,12 +492,11 @@ void zmain(void)
         left = (60000 - ref.l1 - ref.l2 - ref.l3)/177;
         right = (60000 - ref.r1 - ref.r2 - ref.r3)/177;
         // We take the max (60000) and subtract the totals of left and right, then divide the difference by 177.
-        if(dig.l3 == 1 && dig.l2 == 1 && dig.l1 == 1 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0) 
+        /*if(dig.l3 == 1 && dig.l2 == 1 && dig.l1 == 1 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0) 
             motor_turn(0, MAXSPEED, 0);
         else if(dig.l3 == 0 && dig.l2 == 0 && dig.l1 == 1 && dig.r1 == 1 && dig.r2 == 1 && dig.r3 == 1)
-            motor_turn(MAXSPEED, 0, 0);
-        else
-            motor_turn(left, right, 0);
+            motor_turn(MAXSPEED, 0, 0);*/
+        motor_turn(left, right, 0);
     }
 }  
 #endif
