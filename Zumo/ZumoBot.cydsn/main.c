@@ -473,7 +473,6 @@ void zmain(void)
     while(count != 2)
     {
         reflectance_read(&ref);
-        
         if(ref.l3 < least || ref.r3 < least) // Constantly checks for lowest white value to avoid negative numbers.
         {
             least = ref.l3;
