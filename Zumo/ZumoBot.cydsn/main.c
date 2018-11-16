@@ -489,7 +489,7 @@ void zmain(void)
         if(ref.r3 <= least) ref.r3 = least;
         // Our min and max values on each side are now 15000 (3 white) and 60000 (3 black), with a range of 45000 
         // 45000 / 255 (max speed) gives roughly 177. So every 177 change changes the speed by 1.
-        left = (60000 - ref.l1 - ref.l2 - ref.l3)/177;
+        left = (60000 - ref.l1 - ref.l2 - ref.l3)/177; 
         right = (60000 - ref.r1 - ref.r2 - ref.r3)/177;
         // We take the max (60000) and subtract the totals of left and right, then divide the difference by 177.
         /*if(dig.l3 == 1 && dig.l2 == 1 && dig.l1 == 1 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0) 
