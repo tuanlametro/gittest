@@ -462,8 +462,8 @@ void zmain(void)
 //reflectance
 void zmain(void)
 {
-    int last = 0, least = 5000, most = 20000, count = 3, left = 0, right = 0;
-    float light_ratio = 0;
+    int last = 0, least = 5000, most = 20000, count = 3, left = 0, right = 0, l_speed = 0, r_speed = 0;
+    float ratio = 0;
     struct sensors_ ref;
     struct sensors_ dig; 
     motor_start();
@@ -489,8 +489,18 @@ void zmain(void)
         if(ref.r3 <= least) ref.r3 = least;
         // Our min and max values on each side are now 15000 (3 white) and 60000 (3 black), with a range of 45000 
         // 45000 / 255 (max speed) gives roughly 177. So every 177 change changes the speed by 1.
-        left = (60000 - ref.l1 - ref.l2 - ref.l3)/177; 
-        right = (60000 - ref.r1 - ref.r2 - ref.r3)/177;
+        left = (60000 - ref.l1 - ref.l2 - ref.l3); 
+        right = (60000 - ref.r1 - ref.r2 - ref.r3);
+        
+        if(left >= 15000 && left <= 30000) l_speed = 255 - (left/30000)*63;
+        else if(left > 30000 && left <= 54375) l_speed = 128 - (left/
+        else if(left == 60000) l_speed = 0;
+        else l_speed = 192;
+        30000 -> 15000 is 192 to 255
+        30000 -> 54375 is 192 to 128
+        54375 -> 60000 is 128 to 0
+
+            
         // We take the max (60000) and subtract the totals of left and right, then divide the difference by 177.
         /*if(dig.l3 == 1 && dig.l2 == 1 && dig.l1 == 1 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0) 
             motor_turn(0, MAXSPEED, 0);
