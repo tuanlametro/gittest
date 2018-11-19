@@ -52,6 +52,7 @@
 #define SIZE 6
 #define DIR 0 // 0 is left, 1 is right
 #define MAXSPEED 255
+#define SLOWSPEED 100
 /**
  * @file    main.c
  * @brief   
@@ -60,6 +61,7 @@
 void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay);
 bool power(void);
 bool button = false;
+void setup_motor();
 
 #if 0
 // Week 2 Assignment 1, by Tuan
@@ -378,61 +380,6 @@ int randn(void)
 #endif 
 
 #if 0
-// button
-void zmain(void)
-{
-    printf("\nBoot\n");
-
-    //BatteryLed_Write(1); // Switch led on 
-    BatteryLed_Write(0); // Switch led off 
-    
-    //uint8 button;
-    //button = SW1_Read(); // read SW1 on pSoC board
-    // SW1_Read() returns zero when button is pressed
-    // SW1_Read() returns one when button is not pressed
-    
-    bool led = false;
-    
-    for(;;)
-    {
-        // toggle led state when button is pressed
-        if(SW1_Read() == 0) {
-            led = !led;
-            BatteryLed_Write(led);
-            if(led) printf("Led is ON\n");
-            else printf("Led is OFF\n");
-            Beep(1000, 150);
-            while(SW1_Read() == 0) vTaskDelay(10); // wait while button is being pressed
-        }        
-    }
- }   
-#endif
-  
-#if 0
-//IR receiverm - how to wait for IR remote commands
-void zmain(void)
-{
-    IR_Start();
-    
-    printf("\n\nIR test\n");
-    
-    IR_flush(); // clear IR receive buffer
-    printf("Buffer cleared\n");
-    
-    bool led = false;
-    // Toggle led when IR signal is received
-    for(;;)
-    {
-        IR_wait();  // wait for IR command
-        led = !led;
-        BatteryLed_Write(led);
-        if(led) printf("Led is ON\n");
-        else printf("Led is OFF\n");
-    }    
- }   
-#endif
-
-#if 0
 //IR receiver - read raw data
 void zmain(void)
 {
@@ -459,7 +406,7 @@ void zmain(void)
 #endif
 
 #if 0
-//reflectance
+//Line following. Not assignment.
 void zmain(void)
 {
     int last = 0, most = 18000, count = 3;
@@ -641,103 +588,154 @@ void zmain(void)
     }
  }   
 #endif
-
-#if 1
+// Week 4 Assignment 2
+#if 1 
 struct sensors_ dig;
 struct sensors_ ref;
 
-void update_sensors(void);
-void wait_for_remote_pressed(void);
-void drive_to_color(int i) ;
 int count = 0;
 int last = 0, most = 18000;
 float light_ratio = 0;
 bool white = false;
-TickType_t time_start, time_end;
-void setup_motor() 
+TickType_t time_start;
+
+void zmain(void) {
+    setup_motor();
+    while (button == false)
+        if (SW1_Read() == 0) button = true;
+
+    while (count < 5) {
+        reflectance_read(&ref);
+        reflectance_digital(&dig);
+        light_ratio = (float)(ref.l1+ref.l2+ref.l3) / (ref.r1 + ref.r2 + ref.r3);
+        
+        if (dig.l3 == 1 && dig.r3 == 1 && white == true) {
+            if(count == 0) {
+                motor_forward(0, 0);
+                IR_wait();} 
+            else if(count == 1){
+                while(dig.l3 != 0 && dig.r3 != 0) motor_turn(0, SLOWSPEED, 0);
+            }
+            else 
+                while(dig.l3 != 0 && dig.r3 != 0) motor_turn(SLOWSPEED, 0, 0);
+            count++;
+            white = false;
+        }  
+        
+        while(dig.l3 == 0 && dig.r3 == 0) {
+            reflectance_read(&ref);
+            reflectance_digital(&dig);
+            white = true;
+            if (light_ratio >= 1.0 && (dig.l1 == 1 || dig.l2 == 0))
+                motor_turn(SLOWSPEED / light_ratio, SLOWSPEED, 0);
+            else if (light_ratio < 1.0)
+                motor_turn(SLOWSPEED, SLOWSPEED * light_ratio, 0);
+        }
+    }
+    motor_forward(0, 0);
+}
+  
+#endif
+
+// Week 4 Assignment  3
+#if 0 
+struct sensors_ dig;
+struct sensors_ ref;
+
+int count = 0;
+int last = 0, most = 18000;
+float light_ratio = 0;
+bool white = false;
+TickType_t time_start;
+void setup_motor()
 {
     motor_start();
     motor_forward(0,0);
     IR_Start();
     IR_flush();
     reflectance_start();
-    reflectance_set_threshold(15000,12500,12500,12500,12500,15000);
+    reflectance_set_threshold(12000,12500,12500,12500,12500,12000);
 }
 
 void zmain(void) 
 {
     setup_motor();
-    /*while(SW1_Read() == 1)
-    {
-        vTaskDelay
-    }*/
-    
-    
-    while(count < 3)
-    {
-        reflectance_read(&ref);
-        reflectance_digital(&dig); 
-        if(dig.l3 == 1 && dig.r3 == 1)
-        {
-            if(count == 0)
-            {
-                motor_forward(0,0);
-                IR_wait(); 
-                time_start = xTaskGetTickCount();
-                count++;
-            }
-            if(white == true)
-            {
-                count++;
-            }
-            white = false;
-        }
-        else if(dig.l3 == 0 && dig.r3 == 0)
-        {
-            white = true;
-        }
-           
-        if(ref.l1 >= most)
-        {
-            ref.l1 = most;
-        }
-        else if(ref.r1 >= most)
-        {
-            ref.r1 = most;
-        }
-        light_ratio = (float)ref.l1 / ref.r1; 
+    while(button == false) if(SW1_Read() == 0) button = true;
             
+        while(count < 2)
+        {
+            while(count == 0)
+            {
+                reflectance_read(&ref);
+                reflectance_digital(&dig);
+                if(dig.l3 == 1 && dig.r3 == 1 && white == true)
+                {
+                    motor_forward(0,0);
+                    IR_wait(); 
+                    time_start = xTaskGetTickCount();
+                    count++;
+                    white = false;
+                }
+                else if(dig.l3 == 0 || dig.r3 == 0) white = true;
+                
+                light_ratio = (float)ref.l1 / ref.r1; 
+                // Left Turns    
+                if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
+                    motor_turn(SLOWSPEED/light_ratio, SLOWSPEED, 0);
+                else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
+                    motor_turn(SLOWSPEED*0.7/light_ratio, SLOWSPEED, 0);
+                else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
+                    motor_turn(0, SLOWSPEED, 0);
+                // Right Turns
+                else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+                    motor_turn(SLOWSPEED, SLOWSPEED * light_ratio, 0);
+                else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))      
+                    motor_turn(SLOWSPEED, SLOWSPEED*0.7*light_ratio, 0);
+                else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)  
+                    motor_turn(SLOWSPEED, 0, 0); 
+                // Going Straight
+                else if(light_ratio == 1.0)
+                    motor_turn(SLOWSPEED, SLOWSPEED, 0);
+            }
+            reflectance_read(&ref);
+            reflectance_digital(&dig); 
+
+            if(dig.l3 == 1 && dig.r3 == 1 && white == true)
+            {
+                count++;
+                white = false;
+            }
+            
+            else if(dig.l3 == 0 || dig.r3 == 0) white = true;
+               
+            if(ref.l1 >= most)
+            {
+                ref.l1 = most;
+            }
+            else if(ref.r1 >= most)
+            {
+                ref.r1 = most;
+            }
+            light_ratio = (float)ref.l1 / ref.r1; 
+            // Left Turns    
             if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
-            { 
                 motor_turn(MAXSPEED/light_ratio, MAXSPEED, 0);
-            }
             else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
-            {
-                motor_turn(MAXSPEED*0.9/light_ratio, MAXSPEED, 0);
-            }
+                motor_turn(MAXSPEED*0.7/light_ratio, MAXSPEED, 0);
             else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
-            {
                 motor_turn(0, MAXSPEED, 0);
-            }
+            // Right Turns
             else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
-            {
                 motor_turn(MAXSPEED, MAXSPEED * light_ratio, 0);
-            }
-            else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))
-            {        
-                motor_turn(MAXSPEED, MAXSPEED*0.9*light_ratio, 0); 
-            }
-            else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)
-            {        
+            else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))      
+                motor_turn(MAXSPEED, MAXSPEED*0.7*light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)  
                 motor_turn(MAXSPEED, 0, 0); 
-            }
+            // Going Straight
             else if(light_ratio == 1.0)
-            {
                 motor_turn(MAXSPEED, MAXSPEED, 0);
-            }
-    }
-    time_end = xTaskGetTickCount();
-    print_mqtt("Zumo018", "Time: %d", time_end - time_start);
+        }
+        print_mqtt("Zumo018", "Time: %d", xTaskGetTickCount() - time_start);
     motor_forward(0,0);
 }
 #endif
@@ -762,5 +760,15 @@ bool power(void)
             button = !button;
         }
     return button;
+}
+
+void setup_motor()
+{
+    motor_start();
+    motor_forward(0,0);
+    IR_Start();
+    IR_flush();
+    reflectance_start();
+    reflectance_set_threshold(12000,12500,12500,12500,12500,12000);
 }
 /* [] END OF FILE */
