@@ -59,9 +59,12 @@
  * @details  ** Enable global interrupt since Zumo library uses interrupts. **<br>&nbsp;&nbsp;&nbsp;CyGlobalIntEnable;<br>
 */
 void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay);
-bool power(void);
+void power(void);
 bool button = false;
 void setup_motor();
+struct sensors_ dig;
+struct sensors_ ref;
+TickType_t time_start;
 
 #if 0
 // Week 2 Assignment 1, by Tuan
@@ -258,23 +261,17 @@ void zmain(void)
         motor_start();
         power();
         motor_forward(0,0);
-        
-        while(button == true) 
-        {
-            int d = Ultra_GetDistance(); // d is distance in cm
-            printf("distance = %d\r\n", d);
-            if( d <= 10 )
-            {
-                Beep(100, 100);
-                motor_backward(0,0);
-                motor_turn(150, 75, 500);
-                //motor_tank_turn(0, 100, 100, 500); Commented out because it isn't strictly what the assignment wanted.
-            }
-            else 
-            {
-                motor_forward(150, 0);
-            }
+
+        int d = Ultra_GetDistance(); // d is distance in cm
+        printf("distance = %d\r\n", d);
+        if(d <= 10){
+            Beep(100, 100);
+            motor_backward(0,0);
+            motor_turn(150, 75, 500);
         }
+        else 
+            motor_forward(150, 0);
+            
     }
 }  
 #endif
@@ -467,31 +464,6 @@ void zmain(void)
 #endif
 
 #if 0
-//motor
-void zmain(void)
-{
-    motor_start();              // enable motor controller
-    motor_forward(0,0);         // set MAXSPEED to zero to stop motors
-
-    vTaskDelay(3000);
-    
-    motor_forward(100,2000);     // moving forward
-    motor_turn(200,50,2000);     // turn
-    motor_turn(50,200,2000);     // turn
-    motor_backward(100,2000);    // moving backward
-     
-    motor_forward(0,0);         // stop motors
-
-    motor_stop();               // disable motor controller
-    
-    for(;;)
-    {
-
-    }
-}
-#endif 
-
-#if 0
 // MQTT test
 void zmain(void)
 {
@@ -589,35 +561,41 @@ void zmain(void)
  }   
 #endif
 // Week 4 Assignment 2
-#if 1 
-struct sensors_ dig;
-struct sensors_ ref;
+#if 0
 
 int count = 0;
 int last = 0, most = 18000;
 float light_ratio = 0;
 bool white = false;
-TickType_t time_start;
+
 
 void zmain(void) {
     setup_motor();
-    while (button == false)
-        if (SW1_Read() == 0) button = true;
+    power();
 
     while (count < 5) {
         reflectance_read(&ref);
         reflectance_digital(&dig);
-        light_ratio = (float)(ref.l1+ref.l2+ref.l3) / (ref.r1 + ref.r2 + ref.r3);
+        light_ratio = (float)ref.l1 / ref.r1;
         
         if (dig.l3 == 1 && dig.r3 == 1 && white == true) {
             if(count == 0) {
                 motor_forward(0, 0);
-                IR_wait();} 
+                power();
+            } 
             else if(count == 1){
-                while(dig.l3 != 0 && dig.r3 != 0) motor_turn(0, SLOWSPEED, 0);
+                while(dig.l3 != 0 && dig.r3 != 0) {
+                    //motor_turn(0, SLOWSPEED, 0);
+                    motor_tank_turn(0, SLOWSPEED, SLOWSPEED, 0);
+                    reflectance_digital(&dig);
+                }
             }
             else 
-                while(dig.l3 != 0 && dig.r3 != 0) motor_turn(SLOWSPEED, 0, 0);
+                while(dig.l3 != 0 && dig.r3 != 0) {
+                    //motor_turn(SLOWSPEED, 0, 0);
+                    motor_tank_turn(1, SLOWSPEED, SLOWSPEED, 0);
+                    reflectance_digital(&dig);
+                }
             count++;
             white = false;
         }  
@@ -626,10 +604,23 @@ void zmain(void) {
             reflectance_read(&ref);
             reflectance_digital(&dig);
             white = true;
-            if (light_ratio >= 1.0 && (dig.l1 == 1 || dig.l2 == 0))
-                motor_turn(SLOWSPEED / light_ratio, SLOWSPEED, 0);
-            else if (light_ratio < 1.0)
-                motor_turn(SLOWSPEED, SLOWSPEED * light_ratio, 0);
+                // Left Turns    
+                if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
+                    motor_turn(SLOWSPEED/light_ratio, SLOWSPEED, 0);
+                else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
+                    motor_turn(SLOWSPEED*0.7/light_ratio, SLOWSPEED, 0);
+                else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
+                    motor_turn(0, SLOWSPEED, 0);
+                // Right Turns
+                else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+                    motor_turn(SLOWSPEED, SLOWSPEED * light_ratio, 0);
+                else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))      
+                    motor_turn(SLOWSPEED, SLOWSPEED*0.7*light_ratio, 0);
+                else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)  
+                    motor_turn(SLOWSPEED, 0, 0); 
+                // Going Straight
+                else if(light_ratio == 1.0)
+                    motor_turn(SLOWSPEED, SLOWSPEED, 0);
         }
     }
     motor_forward(0, 0);
@@ -638,7 +629,7 @@ void zmain(void) {
 #endif
 
 // Week 4 Assignment  3
-#if 0 
+#if 1
 struct sensors_ dig;
 struct sensors_ ref;
 
@@ -647,15 +638,6 @@ int last = 0, most = 18000;
 float light_ratio = 0;
 bool white = false;
 TickType_t time_start;
-void setup_motor()
-{
-    motor_start();
-    motor_forward(0,0);
-    IR_Start();
-    IR_flush();
-    reflectance_start();
-    reflectance_set_threshold(12000,12500,12500,12500,12500,12000);
-}
 
 void zmain(void) 
 {
@@ -697,26 +679,21 @@ void zmain(void)
                 else if(light_ratio == 1.0)
                     motor_turn(SLOWSPEED, SLOWSPEED, 0);
             }
+            
             reflectance_read(&ref);
             reflectance_digital(&dig); 
 
-            if(dig.l3 == 1 && dig.r3 == 1 && white == true)
-            {
+            if(dig.l3 == 1 && dig.r3 == 1 && white == true){
                 count++;
                 white = false;
             }
             
             else if(dig.l3 == 0 || dig.r3 == 0) white = true;
                
-            if(ref.l1 >= most)
-            {
-                ref.l1 = most;
-            }
-            else if(ref.r1 >= most)
-            {
-                ref.r1 = most;
-            }
+            if(ref.l1 >= most) ref.l1 = most;
+            else if(ref.r1 >= most) ref.r1 = most;
             light_ratio = (float)ref.l1 / ref.r1; 
+            
             // Left Turns    
             if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
                 motor_turn(MAXSPEED/light_ratio, MAXSPEED, 0);
@@ -724,6 +701,7 @@ void zmain(void)
                 motor_turn(MAXSPEED*0.7/light_ratio, MAXSPEED, 0);
             else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
                 motor_turn(0, MAXSPEED, 0);
+                
             // Right Turns
             else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
                 motor_turn(MAXSPEED, MAXSPEED * light_ratio, 0);
@@ -731,11 +709,12 @@ void zmain(void)
                 motor_turn(MAXSPEED, MAXSPEED*0.7*light_ratio, 0);
             else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)  
                 motor_turn(MAXSPEED, 0, 0); 
+                
             // Going Straight
             else if(light_ratio == 1.0)
                 motor_turn(MAXSPEED, MAXSPEED, 0);
         }
-        print_mqtt("Zumo018", "Time: %d", xTaskGetTickCount() - time_start);
+    print_mqtt("Zumo018", "Time: %d", xTaskGetTickCount() - time_start);
     motor_forward(0,0);
 }
 #endif
@@ -753,13 +732,9 @@ void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay
     MotorDirRight_Write(0); 
 }
 
-bool power(void)
-{
-    if(SW1_Read() == 0)
-        {
-            button = !button;
-        }
-    return button;
+void power(void) {
+    while (button == false)
+        if (SW1_Read() == 0) button = true;
 }
 
 void setup_motor()
