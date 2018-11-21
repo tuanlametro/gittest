@@ -50,17 +50,25 @@
 #define coeff 5/4095 /*Vref divided by the number of steps between 0 and max*/
 #define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
 #define SIZE 6
-#define DIR 0 // 0 is left, 1 is right
+#define MAXSPEED 255
+#define SPEED 100
+
 /**
  * @file    main.c
  * @brief   
  * @details  ** Enable global interrupt since Zumo library uses interrupts. **<br>&nbsp;&nbsp;&nbsp;CyGlobalIntEnable;<br>
 */
-void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay);
-bool power(void);
+void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay);
+void power(void);
 bool button = false;
+void setup_motor();
+struct sensors_ dig;
+struct sensors_ ref;
+uint8 count = 0;
+float light_ratio = 0;
+TickType_t time_start;
 
-// Week 2 Assignment 1, by Tuan
+// Week 2 Assignment 1
 #if 0
 void zmain(void){
     uint8 button = 1;
@@ -92,7 +100,7 @@ void zmain(void){
 }    
 #endif
 
-// Week 2 Assignment 2, by Lily
+// Week 2 Assignment 2
 #if 0
 void zmain(void)
 {
@@ -156,7 +164,7 @@ void zmain(void)
  } 
 #endif
 
-// Week 2 Assignment 3, by Joshua
+// Week 2 Assignment 3
 #if 0
 void batcheck();
 void batterytest();
@@ -222,7 +230,7 @@ void ledloop()
 }
 #endif
 
-//Week 3 Assignment 1, by Lily
+// Week 3 Assignment 1
 #if 0
 void zmain(void)
 {
@@ -297,11 +305,11 @@ void zmain(void)
         if(randn() == 5)
         {
             Beep(50,100);
-            if(data.accX % 2 == DIR)
+            if(data.accX % 2 == 0)
             {
                 motor_tank_turn(0, 100, 100, 500);
             }
-            else if(data.accX % 2 != DIR)
+            else if(data.accX % 2 != 0)
             {
                 motor_tank_turn(1, 100, 100, 500);
             } 
@@ -318,11 +326,11 @@ void zmain(void)
             {
                 motor_backward(100, 200);
                 
-                if(data.accX % 2 == DIR)
+                if(data.accX % 2 == 0)
                 {
                     motor_tank_turn(0, 100, 100, 500);
                 }
-                else if(data.accX % 2 != DIR)
+                else if(data.accX % 2 != 0)
                 {
                     motor_tank_turn(1, 100, 100, 500);
                 }
@@ -376,16 +384,43 @@ int randn(void)
 }
 #endif 
 
+// Week 4 Assignment 1
+#if 0
+
+void drive_to_color(int i) 
+{
+    reflectance_digital(&dig);
+    while(dig.l3 != i || dig.r3 != i) 
+    {
+        reflectance_digital(&dig);
+        motor_forward(40,80);
+    }
+    motor_forward(0,0);
+}
+
+void zmain(void) 
+{
+    setup_motor();
+    power();
+    drive_to_color(1);
+    motor_forward(0,0);
+    IR_wait();
+
+    for(int i=0;i<3;i++)
+    {
+        drive_to_color(0);
+        drive_to_color(1);
+    }
+    motor_forward(0,0);
+}
+#endif
+
 // Week 4 Assignment 2
 #if 0
-struct sensors_ dig;
-int count = 0;
 int black();
 void fwhite();
-float light_ratio = 0;
 TickType_t tid = 0, tid2 = 0;
 bool white = false, mid_white = false;
-
 
 void zmain(void) {
     setup_motor();
@@ -394,8 +429,9 @@ void zmain(void) {
     while (count < 5) {
         reflectance_read(&ref);
         reflectance_digital(&dig);
-        motor_forward(SLOWSPEED, 0);
-        if(dig.l3 == 1 && dig.r3 == 1) {
+        motor_forward(SPEED, 0);
+        if(dig.l3 == 1 && dig.r3 == 1) 
+        {
             count++;
             black();
             fwhite();
@@ -404,14 +440,13 @@ void zmain(void) {
         {
             light_ratio = (float)ref.l1 / ref.r1; 
             if(light_ratio > 1.0)
-                motor_turn(SLOWSPEED/light_ratio, SLOWSPEED, 0);
+                motor_turn(SPEED/light_ratio, SPEED, 0);
             else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
-                motor_turn(SLOWSPEED, SLOWSPEED * light_ratio, 0); 
+                motor_turn(SPEED, SPEED * light_ratio, 0); 
         }
     }
 }
 
-  
 int black()
 {
     if(count == 1) 
@@ -424,7 +459,7 @@ int black()
         while(dig.l3 != 0 || dig.r3 != 0) 
         {
             reflectance_digital(&dig);
-            motor_forward(SLOWSPEED, 0);
+            motor_forward(SPEED, 0);
         }
         tid2 = xTaskGetTickCount() - tid;
     }
@@ -434,7 +469,7 @@ int black()
         while(dig.l3 != 0 || dig.r3 != 0) 
         {
             reflectance_digital(&dig);
-            motor_forward(SLOWSPEED, 0);
+            motor_forward(SPEED, 0);
         }
     }
     
@@ -445,14 +480,15 @@ void fwhite()
 {
     if(count < 5) 
     {
-        motor_forward(SLOWSPEED, tid2); 
-        if(count == 2) motor_tank_turn(0, SLOWSPEED, SLOWSPEED, 500);
-        else if(count > 2) motor_tank_turn(1, SLOWSPEED, SLOWSPEED, 500);
+        motor_forward(SPEED, tid2); // Drives forward for the same time it takes to travel the width of a black line
+        if(count == 2) motor_tank_turn(0, SPEED, SPEED, 500); // Turn left on the first intersection
+        else if(count > 2) motor_tank_turn(1, SPEED, SPEED, 500); // Turn right for all others
         
-        while(1) {
+        while(1) 
+        {
             reflectance_digital(&dig);
-            if(count == 2) motor_tank_turn(0, SLOWSPEED, SLOWSPEED, 0);
-            else if(count > 2) motor_tank_turn(1, SLOWSPEED, SLOWSPEED, 0);
+            if(count == 2) motor_tank_turn(0, SPEED, SPEED, 0);
+            else if(count > 2) motor_tank_turn(1, SPEED, SPEED, 0);
         
             if(dig.l1 == 1 && dig.r1 == 1) break;
         }
@@ -462,7 +498,7 @@ void fwhite()
 }
 #endif
 
-// Week 4 Assignment  3
+// Week 4 Assignment 3
 #if 0
 struct sensors_ dig;
 struct sensors_ ref;
@@ -497,21 +533,21 @@ void zmain(void)
                 light_ratio = (float)ref.l1 / ref.r1; 
                 // Left Turns    
                 if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
-                    motor_turn(SLOWSPEED/light_ratio, SLOWSPEED, 0);
+                    motor_turn(speed/light_ratio, speed, 0);
                 else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
-                    motor_turn(SLOWSPEED*0.7/light_ratio, SLOWSPEED, 0);
+                    motor_turn(speed*0.7/light_ratio, speed, 0);
                 else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
-                    motor_turn(0, SLOWSPEED, 0);
+                    motor_turn(0, speed, 0);
                 // Right Turns
                 else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
-                    motor_turn(SLOWSPEED, SLOWSPEED * light_ratio, 0);
+                    motor_turn(speed, speed * light_ratio, 0);
                 else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))      
-                    motor_turn(SLOWSPEED, SLOWSPEED*0.7*light_ratio, 0);
+                    motor_turn(speed, speed*0.7*light_ratio, 0);
                 else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)  
-                    motor_turn(SLOWSPEED, 0, 0); 
+                    motor_turn(speed, 0, 0); 
                 // Going Straight
                 else if(light_ratio == 1.0)
-                    motor_turn(SLOWSPEED, SLOWSPEED, 0);
+                    motor_turn(speed, speed, 0);
             }
             
             reflectance_read(&ref);
@@ -553,7 +589,7 @@ void zmain(void)
 }
 #endif
   
-#if 1
+#if 0
 //reflectance
 void zmain(void)
 {
@@ -700,24 +736,30 @@ void zmain(void)
 
 // Our own functions
 
-void motor_tank_turn(uint8 dir, uint8 l_speed, uint8 r_speed, uint32 delay)
+void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay)
 {
     MotorDirLeft_Write(!dir); // dir 0 turns left, dir 1 turns right.
     MotorDirRight_Write(dir);
-    PWM_WriteCompare1(l_speed); 
-    PWM_WriteCompare2(r_speed); 
+    PWM_WriteCompare1(l_MAXSPEED); 
+    PWM_WriteCompare2(r_MAXSPEED); 
     vTaskDelay(delay);
     
     MotorDirLeft_Write(0);          // Returns both motors to forward after turn is complete    
     MotorDirRight_Write(0); 
 }
 
-bool power(void)
+void power(void) {
+    while (button == false)
+        if (SW1_Read() == 0) button = true;
+}
+
+void setup_motor()
 {
-    if(SW1_Read() == 0)
-        {
-            button = !button;
-        }
-    return button;
+    motor_start();
+    motor_forward(0,0);
+    IR_Start();
+    IR_flush();
+    reflectance_start();
+    reflectance_set_threshold(12000,12500,12500,12500,12500,12000);
 }
 /* [] END OF FILE */
