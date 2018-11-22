@@ -51,7 +51,7 @@
 #define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
 #define SIZE 6
 #define MAXSPEED 255
-#define SPEED 100
+#define SPEED 75
 
 /**
  * @file    main.c
@@ -64,7 +64,7 @@ bool button = false;
 void setup_motor();
 struct sensors_ dig;
 struct sensors_ ref;
-uint8 count = 0;
+int count = 0;
 float light_ratio = 0;
 TickType_t time_start;
 
@@ -433,10 +433,25 @@ void zmain(void) {
         else 
         {
             light_ratio = (float)ref.l1 / ref.r1; 
-            if(light_ratio >= 1.0)
-                motor_turn(SPEED/light_ratio, SPEED, 0);
-            else if(light_ratio < 1.0)
-                motor_turn(SPEED, SPEED*light_ratio, 0); 
+            // Left Turns    
+            if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
+                motor_turn(MAXSPEED/light_ratio, MAXSPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(MAXSPEED*0.7/light_ratio, MAXSPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(0, MAXSPEED, 0);
+                
+            // Right Turns
+            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+                motor_turn(MAXSPEED, MAXSPEED * light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))      
+                motor_turn(MAXSPEED, MAXSPEED*0.7*light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)  
+                motor_turn(MAXSPEED, 0, 0); 
+                
+            // Going Straight
+            else if(light_ratio == 1.0)
+                motor_turn(MAXSPEED, MAXSPEED, 0);
         }
     }
 }
@@ -477,15 +492,15 @@ void fwhite()
         motor_forward(SPEED, tid2); // Drives forward for the same time it takes to travel the width of a black line
         //if(count == 2) motor_tank_turn(0, SPEED, SPEED, 500); // Turn left on the first intersection
         //else if(count > 2) motor_tank_turn(1, SPEED, SPEED, 500); // Turn right for all others
-        
+        if(count == 2) motor_tank_turn(0, SPEED, SPEED, 500);
+        else if(count > 2) motor_tank_turn(1, SPEED, SPEED, 0);
         while(1) 
         {
             reflectance_digital(&dig);
-            if(dig.l1 == 0 && dig.r1 == 0) was_white = true;
             if(count == 2) motor_tank_turn(0, SPEED, SPEED, 0);
             else if(count > 2) motor_tank_turn(1, SPEED, SPEED, 0);
         
-            if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0 && was_white == true) break;
+            if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
         }
         motor_forward(0,0);
     }    
@@ -752,6 +767,6 @@ void setup_motor()
     IR_Start();
     IR_flush();
     reflectance_start();
-    reflectance_set_threshold(12000,12000,15000,15000,12000,12000);
+    reflectance_set_threshold(12000,8000,12000,12000,8000,12000);
 }
 /* [] END OF FILE */
