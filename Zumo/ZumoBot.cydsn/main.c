@@ -175,19 +175,15 @@ bool warning = false;
 
 void zmain(void)
 {   
-
     ADC_Battery_Start();
     ADC_Battery_StartConvert();
     while(1)
     {
         if (warning == false)
-        {
             batcheck();
-        }
+
         else if (warning == true)
-        {
             ledloop();
-        }
     }
 }
 
@@ -201,9 +197,7 @@ void batcheck()
         volts = converted * realv;
         printf("%d %f\r\n",adcresult, volts);
         if (volts <= 4.0)
-        {
             warning = true;
-        }
         vTaskDelay(500);
     }
 }
@@ -223,9 +217,7 @@ void ledloop()
         BatteryLed_Write(0);
         vTaskDelay(500);
         if(SW1_Read() == 0)
-        {
             warning = false;
-        }
     }
 }
 #endif
@@ -273,7 +265,6 @@ void zmain(void)
                 Beep(100, 100);
                 motor_backward(0,0);
                 motor_turn(150, 75, 500);
-                //motor_tank_turn(0, 100, 100, 500); Commented out because it isn't strictly what the assignment wanted.
             }
             else 
             {
@@ -294,7 +285,7 @@ int seed(void);
 
 void zmain(void)
 {
-
+    power();
     acceltest();
     srand(seed());
     
@@ -313,6 +304,7 @@ void zmain(void)
             {
                 motor_tank_turn(1, 100, 100, 500);
             } 
+            motor_forward(0,0);
         }
         
         else
@@ -334,6 +326,7 @@ void zmain(void)
                 {
                     motor_tank_turn(1, 100, 100, 500);
                 }
+                motor_forward(0,0);
             }
         }
         vTaskDelay(50);
@@ -416,17 +409,18 @@ void zmain(void)
 #endif
 
 // Week 4 Assignment 2
-#if 0
+#if 1
 int black();
 void fwhite();
 TickType_t tid = 0, tid2 = 0;
-bool white = false, mid_white = false;
+bool white = false, was_white;
 
 void zmain(void) {
     setup_motor();
     power();
 
     while (count < 5) {
+        was_white = false;
         reflectance_read(&ref);
         reflectance_digital(&dig);
         motor_forward(SPEED, 0);
@@ -439,10 +433,10 @@ void zmain(void) {
         else 
         {
             light_ratio = (float)ref.l1 / ref.r1; 
-            if(light_ratio > 1.0)
+            if(light_ratio >= 1.0)
                 motor_turn(SPEED/light_ratio, SPEED, 0);
-            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
-                motor_turn(SPEED, SPEED * light_ratio, 0); 
+            else if(light_ratio < 1.0)
+                motor_turn(SPEED, SPEED*light_ratio, 0); 
         }
     }
 }
@@ -481,19 +475,20 @@ void fwhite()
     if(count < 5) 
     {
         motor_forward(SPEED, tid2); // Drives forward for the same time it takes to travel the width of a black line
-        if(count == 2) motor_tank_turn(0, SPEED, SPEED, 500); // Turn left on the first intersection
-        else if(count > 2) motor_tank_turn(1, SPEED, SPEED, 500); // Turn right for all others
+        //if(count == 2) motor_tank_turn(0, SPEED, SPEED, 500); // Turn left on the first intersection
+        //else if(count > 2) motor_tank_turn(1, SPEED, SPEED, 500); // Turn right for all others
         
         while(1) 
         {
             reflectance_digital(&dig);
+            if(dig.l1 == 0 && dig.r1 == 0) was_white = true;
             if(count == 2) motor_tank_turn(0, SPEED, SPEED, 0);
             else if(count > 2) motor_tank_turn(1, SPEED, SPEED, 0);
         
-            if(dig.l1 == 1 && dig.r1 == 1) break;
+            if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0 && was_white == true) break;
         }
-    }
-    
+        motor_forward(0,0);
+    }    
     else motor_forward(0,0);
 }
 #endif
@@ -743,9 +738,6 @@ void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay
     PWM_WriteCompare1(l_MAXSPEED); 
     PWM_WriteCompare2(r_MAXSPEED); 
     vTaskDelay(delay);
-    
-    MotorDirLeft_Write(0);          // Returns both motors to forward after turn is complete    
-    MotorDirRight_Write(0); 
 }
 
 void power(void) {
@@ -760,6 +752,6 @@ void setup_motor()
     IR_Start();
     IR_flush();
     reflectance_start();
-    reflectance_set_threshold(12000,12500,12500,12500,12500,12000);
+    reflectance_set_threshold(12000,12000,15000,15000,12000,12000);
 }
 /* [] END OF FILE */
