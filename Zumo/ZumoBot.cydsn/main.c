@@ -51,7 +51,7 @@
 #define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
 #define SIZE 6
 #define MAXSPEED 255
-#define SPEED 75
+#define SPEED 100
 
 /**
  * @file    main.c
@@ -409,7 +409,7 @@ void zmain(void)
 #endif
 
 // Week 4 Assignment 2
-#if 1
+#if 0
 int black();
 void fwhite();
 TickType_t tid = 0, tid2 = 0;
@@ -599,6 +599,184 @@ void zmain(void)
 }
 #endif
   
+// Week 4 Assignment 2
+#if 1
+int black();
+void fwhite();
+TickType_t tid = 0, tid2 = 0;
+bool white = false, flag = false;
+int dir = 0, column = 0, row = 0;
+
+void zmain(void) {
+    setup_motor();
+    power();
+
+    while (1) {
+        reflectance_read(&ref);
+        reflectance_digital(&dig);
+        motor_forward(SPEED, 0);
+        
+        int d = Ultra_GetDistance(); // d is distance in cm
+        if(d <= 25)
+            flag = true;
+        
+        if(dig.l3 == 1 && dig.r3 == 1) 
+        {
+            if(dir == 0)
+                row++;
+            else if(dir == -1)
+                column--;
+            else if(dir == 1)
+                column++;
+            black();
+            fwhite();
+        }
+        else //line follow junk
+        {
+            light_ratio = (float)ref.l1 / ref.r1; 
+            // Left Turns    
+            if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
+                motor_turn(SPEED/light_ratio, SPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(SPEED*0.7/light_ratio, SPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(0, SPEED, 0);
+                
+            // Right Turns
+            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+                motor_turn(SPEED, SPEED * light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))      
+                motor_turn(SPEED, SPEED*0.7*light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)  
+                motor_turn(SPEED, 0, 0); 
+                
+            // Going Straight
+            else if(light_ratio == 1.0)
+                motor_turn(SPEED, SPEED, 0);
+        }
+    }
+}
+
+int black()
+{
+    if(row == 1 && dir == 0) 
+    {
+        motor_forward(0,0);
+        Beep(100, 50);       
+        IR_wait();
+        tid = xTaskGetTickCount();
+    
+        while(dig.l3 != 0 || dig.r3 != 0) 
+        {
+            reflectance_digital(&dig);
+            motor_forward(SPEED, 0);
+        }
+        tid2 = xTaskGetTickCount() - tid;
+        return tid2;
+    }
+    
+    else
+    {
+        while(dig.l3 != 0 || dig.r3 != 0) 
+        {
+            reflectance_digital(&dig);
+            motor_forward(SPEED, 0);
+        }
+        count--;
+    }
+    return count;
+}
+
+void fwhite()
+{
+    motor_forward(SPEED, tid2); 
+    if(flag == true)
+    {
+        count = 2;
+        if(dir == 0)
+        {
+            if(column >= 0) 
+            {
+                motor_tank_turn(0, SPEED, SPEED, 500);
+                dir--;
+                
+                while(1)
+                {
+                    motor_tank_turn(0, SPEED, SPEED, 0);
+                    reflectance_digital(&dig);
+                    if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
+                }
+            }
+            
+            if(column < 0)
+            {
+                motor_tank_turn(1, SPEED, SPEED, 500);
+                dir++;
+                while(1)
+                {
+                    motor_tank_turn(1, SPEED, SPEED, 0);
+                    reflectance_digital(&dig);
+                    if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
+                }
+            }
+        }
+        else if(dir == -1)
+        {
+            motor_tank_turn(1, SPEED, SPEED, 500);
+            dir++;
+            while(1)
+            {
+                motor_tank_turn(1, SPEED, SPEED, 0);
+                reflectance_digital(&dig);
+                if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
+            }
+        }
+                
+        else if(dir == 1)
+        {
+            motor_tank_turn(0, SPEED, SPEED, 500);
+            dir--;
+            while(1)
+            {
+                motor_tank_turn(0, SPEED, SPEED, 0);
+                reflectance_digital(&dig);
+                if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
+            }
+        }
+        flag = false;
+           
+        motor_forward(0,0);
+    }    
+    else if(flag == false)
+    {
+        if(dir == -1 && count == 0)
+        {
+            motor_tank_turn(1, SPEED, SPEED, 500);
+            dir++;
+            while(1)
+            {
+                motor_tank_turn(1, SPEED, SPEED, 0);
+                reflectance_digital(&dig);
+                if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
+            }
+        }
+        
+        else if(dir == 1 && count == 0)
+        {
+            motor_tank_turn(0, SPEED, SPEED, 500);
+            dir--;
+            while(1)
+            {
+                motor_tank_turn(0, SPEED, SPEED, 0);
+                reflectance_digital(&dig);
+                if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
+            }
+        }
+        motor_forward(0,0);
+    }   
+}
+#endif
+
 #if 0
 //reflectance
 void zmain(void)
@@ -755,7 +933,8 @@ void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay
     vTaskDelay(delay);
 }
 
-void power(void) {
+void power(void) 
+{
     while (button == false)
         if (SW1_Read() == 0) button = true;
 }
@@ -764,9 +943,10 @@ void setup_motor()
 {
     motor_start();
     motor_forward(0,0);
+    Ultra_Start(); 
     IR_Start();
     IR_flush();
     reflectance_start();
-    reflectance_set_threshold(12000,8000,12000,12000,8000,12000);
+    reflectance_set_threshold(10000,8000,14000,14000,8000,10000);
 }
 /* [] END OF FILE */
