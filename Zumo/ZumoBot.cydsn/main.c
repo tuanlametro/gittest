@@ -490,10 +490,8 @@ void fwhite()
     if(count < 5) 
     {
         motor_forward(SPEED, tid2); // Drives forward for the same time it takes to travel the width of a black line
-        //if(count == 2) motor_tank_turn(0, SPEED, SPEED, 500); // Turn left on the first intersection
-        //else if(count > 2) motor_tank_turn(1, SPEED, SPEED, 500); // Turn right for all others
-        if(count == 2) motor_tank_turn(0, SPEED, SPEED, 500);
-        else if(count > 2) motor_tank_turn(1, SPEED, SPEED, 0);
+        if(count == 2) motor_tank_turn(0, SPEED, SPEED, 500); // Turn left on the first intersection
+        else if(count > 2) motor_tank_turn(1, SPEED, SPEED, 500); // Turn right for all others
         while(1) 
         {
             reflectance_digital(&dig);
@@ -594,13 +592,12 @@ void zmain(void)
             else if(light_ratio == 1.0)
                 motor_turn(MAXSPEED, MAXSPEED, 0);
         }
-    print_mqtt("Zumo018", "Time: %d", xTaskGetTickCount() - time_start);
     motor_forward(0,0);
 }
 #endif
   
-// Week 4 Assignment 2
-#if 1
+// Maze stuff
+#if 0
 int black();
 void fwhite();
 TickType_t tid = 0, tid2 = 0;
