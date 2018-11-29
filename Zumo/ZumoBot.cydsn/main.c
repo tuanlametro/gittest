@@ -470,9 +470,10 @@ void zmain(void)
     reflectance_start();
     reflectance_set_threshold(9000, 9000, 11000, 11000, 9000, 9000); // set center sensor threshold to 11000 and others to 9000
     
-    while(count != 2)
+    
+    while(1)
     {
-        reflectance_read(&ref);
+        /*reflectance_read(&ref);
         
         if(ref.l3 < least || ref.r3 < least) // Constantly checks for lowest white value to avoid negative numbers.
         {
@@ -488,21 +489,27 @@ void zmain(void)
         
         light_ratio = left / right; 
         motor_ratio = right / left;
-        motor_turn(150, 150, 0);
+        motor_turn(150, 150, 0);*/
         /*if(ref.l3 > 15000 && ref.r3 > 15000)
         {
             count++;
         }*/
         //else
         //{
-            if(light_ratio > 1)
-            { 
-                motor_turn((motor_ratio)*150, 150, 0); 
-            }
-            else if(light_ratio < 1)
-            {        
-                motor_turn(150, (motor_ratio)*150, 0); 
-            }
+        int c;
+        while (c == !4)
+        motor_turn(100,100, 0);
+        while (ref.r3 > 19000 && ref.l3 > 19000){
+            if (ref.r3 < 6000 && ref.l3 < 6000)
+            break;
+        }
+        c = c + 1;
+        
+        if (c == 4){
+            motor_turn(0, 0, 0);
+            motor_stop();
+        }
+            
         //}
         // last = Will be useful for tracking black starting and stoppung lines.
     }
