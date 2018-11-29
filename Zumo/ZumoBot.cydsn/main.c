@@ -51,7 +51,7 @@
 #define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
 #define SIZE 6
 #define MAXSPEED 255
-#define SPEED 100
+#define SPEED 150
 
 /**
  * @file    main.c
@@ -386,7 +386,7 @@ void drive_to_color(int i)
     while(dig.l3 != i || dig.r3 != i) 
     {
         reflectance_digital(&dig);
-        motor_forward(40,80);
+        motor_forward(40,0);
     }
     motor_forward(0,0);
 }
@@ -597,25 +597,27 @@ void zmain(void)
 #endif
   
 // Maze stuff
-#if 0
+#if 1
 int black();
 void fwhite();
+void intersect(int i);
+void drive_to_line();
 TickType_t tid = 0, tid2 = 0;
 bool white = false, flag = false;
 int dir = 0, column = 0, row = 0;
+//Dir 0 is N, Dir 1 is E, Dir -1 is W, everything else doesn't work
 
 void zmain(void) {
     setup_motor();
     power();
-
-    while (1) {
+    drive_to_line();
+    
+    while(row < 15) {
         reflectance_read(&ref);
         reflectance_digital(&dig);
-        motor_forward(SPEED, 0);
-        
+        light_ratio = (float)ref.l1 / ref.r1; 
         int d = Ultra_GetDistance(); // d is distance in cm
-        if(d <= 25)
-            flag = true;
+        if(d <= 25) flag = true;
         
         if(dig.l3 == 1 && dig.r3 == 1) 
         {
@@ -628,9 +630,8 @@ void zmain(void) {
             black();
             fwhite();
         }
-        else //line follow junk
+        else
         {
-            light_ratio = (float)ref.l1 / ref.r1; 
             // Left Turns    
             if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
                 motor_turn(SPEED/light_ratio, SPEED, 0);
@@ -650,8 +651,9 @@ void zmain(void) {
             // Going Straight
             else if(light_ratio == 1.0)
                 motor_turn(SPEED, SPEED, 0);
-        }
+        }    
     }
+    motor_forward(0, 0);
 }
 
 int black()
@@ -687,90 +689,81 @@ int black()
 void fwhite()
 {
     motor_forward(SPEED, tid2); 
-    if(flag == true)
+    if(flag == true) // If the robot has detected an obstacle
     {
-        count = 2;
+        count = 2; // Set the count to 2 so it knows to stop after travelling 2 rows/columns
         if(dir == 0)
         {
-            if(column >= 0) 
+            if(column >= 0) //If we're in the middle or to the right of the middle, turn left 
             {
-                motor_tank_turn(0, SPEED, SPEED, 500);
                 dir--;
-                
-                while(1)
-                {
-                    motor_tank_turn(0, SPEED, SPEED, 0);
+                intersect(0);
+                    /*
                     reflectance_digital(&dig);
-                    if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
-                }
+                    motor_tank_turn(0, SPEED, SPEED, 0);       
+                    if(dig.l1 == 0 && dig.r1 == 0) white = true;
+                    if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0 && white == true) break;
+                    */
             }
             
-            if(column < 0)
+            if(column < 0) //Turn right
             {
-                motor_tank_turn(1, SPEED, SPEED, 500);
                 dir++;
-                while(1)
-                {
-                    motor_tank_turn(1, SPEED, SPEED, 0);
-                    reflectance_digital(&dig);
-                    if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
-                }
+                intersect(1);
             }
         }
         else if(dir == -1)
         {
-            motor_tank_turn(1, SPEED, SPEED, 500);
             dir++;
-            while(1)
-            {
-                motor_tank_turn(1, SPEED, SPEED, 0);
-                reflectance_digital(&dig);
-                if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
-            }
+            intersect(1);
         }
                 
         else if(dir == 1)
         {
-            motor_tank_turn(0, SPEED, SPEED, 500);
             dir--;
-            while(1)
-            {
-                motor_tank_turn(0, SPEED, SPEED, 0);
-                reflectance_digital(&dig);
-                if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
-            }
+            intersect(0);
         }
         flag = false;
            
         motor_forward(0,0);
     }    
-    else if(flag == false)
+    else if(flag == false) //Code to stop after 2 intersections
     {
         if(dir == -1 && count == 0)
         {
-            motor_tank_turn(1, SPEED, SPEED, 500);
             dir++;
-            while(1)
-            {
-                motor_tank_turn(1, SPEED, SPEED, 0);
-                reflectance_digital(&dig);
-                if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
-            }
+            intersect(1);
         }
         
         else if(dir == 1 && count == 0)
         {
-            motor_tank_turn(0, SPEED, SPEED, 500);
             dir--;
-            while(1)
-            {
-                motor_tank_turn(0, SPEED, SPEED, 0);
-                reflectance_digital(&dig);
-                if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
-            }
+            intersect(0);
         }
         motor_forward(0,0);
     }   
+}
+
+void intersect(int i)
+{
+    while(1)
+    {
+        reflectance_digital(&dig);
+        motor_tank_turn(i, SPEED, SPEED, 0);       
+        if(dig.l2 == 1 || dig.r2 == 1) white = true;
+        if(dig.l1 == 1 && dig.r1 == 1 && white == true) break;
+    }
+    white = false;
+}
+
+void drive_to_line()
+{
+    while(1) 
+    {
+        reflectance_digital(&dig);
+        motor_forward(50,0);
+        if(dig.l3 == 1 && dig.r3 == 1) break;
+    }
 }
 #endif
 
@@ -819,7 +812,7 @@ void zmain(void)
 #endif
 
 // Week 5 Assignment 2
-#if 1
+#if 0
 void zmain(void)
 {
     TickType_t time = xTaskGetTickCount();
@@ -834,20 +827,86 @@ void zmain(void)
         {   
             if((xTaskGetTickCount() - time) % 2 == 0)
             {
-                print_mqtt("Zumo018/turn", "Turning left!");
                 motor_backward(150,300);
-                motor_tank_turn(0, 150, 150, 500);
+                motor_tank_turn(0, 150, 150, 400);
+                print_mqtt("Zumo018/turn", "Turned left!");
             }
             else
             {
-                print_mqtt("Zumo018/turn", "Turning right");
                 motor_backward(150,300);
-                motor_tank_turn(1, 150, 150, 500); 
+                motor_tank_turn(1, 150, 150, 400); 
+                print_mqtt("Zumo018/turn", "Turned right!");
             }
         }
         else motor_forward(150, 0);  
     }
 }  
+#endif
+
+// Week 5 Assignment 3
+#if 0
+    
+int black();
+void fwhite();
+TickType_t tid = 0, tid2 = 0;
+bool white = false, flag = false;
+int dir = 0, column = 0, row = 0;
+
+void zmain(void) 
+{
+    setup_motor();
+    power();
+
+    while (1) {
+        reflectance_read(&ref);
+        reflectance_digital(&dig);
+        motor_forward(SPEED, 0);
+        
+        if(dig.l3 == 1 && dig.r3 == 1) 
+        {
+            black();
+        }
+        else //line follow junk
+        {
+            light_ratio = (float)ref.l1 / ref.r1; 
+            // Left Turns    
+            if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
+                motor_turn(SPEED/light_ratio, SPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(SPEED*0.7/light_ratio, SPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(0, SPEED, 0);
+                
+            // Right Turns
+            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+                motor_turn(SPEED, SPEED * light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))      
+                motor_turn(SPEED, SPEED*0.7*light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)  
+                motor_turn(SPEED, 0, 0); 
+                
+            // Going Straight
+            else if(light_ratio == 1.0)
+                motor_turn(SPEED, SPEED, 0);
+        }
+    }
+}
+
+int black()
+{
+    count++;
+    motor_forward(0, 0);
+    IR_flush();
+    IR_wait();
+    if(count == 1) tid = xTaskGetTickCount(); 
+    if(count > 1) print_mqtt("Zumo018/lap", "Elapsed time: %d", xTaskGetTickCount() - tid);
+    while(dig.l3 != 0 || dig.r3 != 0) 
+    {
+        reflectance_digital(&dig);
+        motor_forward(SPEED, 0);
+    }
+    return tid;
+}
 #endif
 
 #if 0
@@ -1020,6 +1079,6 @@ void setup_motor()
     IR_Start();
     IR_flush();
     reflectance_start();
-    reflectance_set_threshold(10000,8000,14000,14000,8000,10000);
+    reflectance_set_threshold(15000,8000,16000,16000,8000,15000);
 }
 /* [] END OF FILE */
