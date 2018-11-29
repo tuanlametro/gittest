@@ -774,6 +774,82 @@ void fwhite()
 }
 #endif
 
+// Week 5 Assignment 1
+#if 0
+void zmain(void)
+{    
+    int hour = 0, min = 0;
+    RTC_Start(); // start real time clock
+    RTC_TIME_DATE now;
+
+    // set current time
+    now.Sec = 0;
+    now.Min = 0;
+    now.Hour = 0;
+    now.DayOfMonth = 29;
+    now.Month = 11;
+    now.Year = 2018;
+    printf("Enter the hour \n");
+    scanf("%d", &hour);
+    now.Hour = hour;
+    printf("Enter the minutes \n");
+    scanf("%d", &min);
+    now.Min = min;
+    
+    RTC_WriteTime(&now); 
+
+    
+    for(;;)
+    {
+        if(SW1_Read() == 0) {
+            // read the current time
+            RTC_DisableInt(); // Disable Interrupt of RTC Component
+            now = *RTC_ReadTime(); // copy the current time to a local variable 
+            RTC_EnableInt(); // Enable Interrupt of RTC Component
+
+            // print the current time
+            print_mqtt("Zumo018/time", "%2d:%02d.%02d\n", now.Hour, now.Min, now.Sec);
+            
+            // wait until button is released
+            while(SW1_Read() == 0) vTaskDelay(50);
+        }
+        vTaskDelay(50);
+    }
+ }   
+#endif
+
+// Week 5 Assignment 2
+#if 1
+void zmain(void)
+{
+    TickType_t time = xTaskGetTickCount();
+    setup_motor();
+    power();
+    
+    while(1)
+    {
+        int d = Ultra_GetDistance(); // d is distance in cm
+        printf("distance = %d\r\n", d);
+        if( d <= 10 )
+        {   
+            if((xTaskGetTickCount() - time) % 2 == 0)
+            {
+                print_mqtt("Zumo018/turn", "Turning left!");
+                motor_backward(150,300);
+                motor_tank_turn(0, 150, 150, 500);
+            }
+            else
+            {
+                print_mqtt("Zumo018/turn", "Turning right");
+                motor_backward(150,300);
+                motor_tank_turn(1, 150, 150, 500); 
+            }
+        }
+        else motor_forward(150, 0);  
+    }
+}  
+#endif
+
 #if 0
 //reflectance
 void zmain(void)
