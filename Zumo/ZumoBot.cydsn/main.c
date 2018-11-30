@@ -597,7 +597,7 @@ void zmain(void)
 #endif
   
 // Maze stuff
-#if 1
+#if 0
 int black();
 void fwhite();
 void intersect(int i);
@@ -844,8 +844,7 @@ void zmain(void)
 #endif
 
 // Week 5 Assignment 3
-#if 0
-    
+#if 1    
 int black();
 void fwhite();
 TickType_t tid = 0, tid2 = 0;
