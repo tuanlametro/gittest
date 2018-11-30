@@ -595,7 +595,148 @@ void zmain(void)
     motor_forward(0,0);
 }
 #endif
-  
+ 
+// Week 5 Assignment 1
+#if 0
+void zmain(void)
+{    
+    int hour = 0, min = 0;
+    RTC_Start(); // start real time clock
+    RTC_TIME_DATE now;
+
+    // set current time
+    now.Sec = 0;
+    now.Min = 0;
+    now.Hour = 0;
+    now.DayOfMonth = 29;
+    now.Month = 11;
+    now.Year = 2018;
+    printf("Enter the hour \n");
+    scanf("%d", &hour);
+    now.Hour = hour;
+    printf("Enter the minutes \n");
+    scanf("%d", &min);
+    now.Min = min;
+    
+    RTC_WriteTime(&now); 
+
+    
+    for(;;)
+    {
+        if(SW1_Read() == 0) {
+            // read the current time
+            RTC_DisableInt(); // Disable Interrupt of RTC Component
+            now = *RTC_ReadTime(); // copy the current time to a local variable 
+            RTC_EnableInt(); // Enable Interrupt of RTC Component
+
+            // print the current time
+            print_mqtt("Zumo018/time", "%2d:%02d.%02d\n", now.Hour, now.Min, now.Sec);
+            
+            // wait until button is released
+            while(SW1_Read() == 0) vTaskDelay(50);
+        }
+        vTaskDelay(50);
+    }
+ }   
+#endif
+
+// Week 5 Assignment 2
+#if 0
+void zmain(void)
+{
+    TickType_t time = xTaskGetTickCount();
+    setup_motor();
+    power();
+    
+    while(1)
+    {
+        int d = Ultra_GetDistance(); // d is distance in cm
+        printf("distance = %d\r\n", d);
+        if( d <= 10 )
+        {   
+            if((xTaskGetTickCount() - time) % 2 == 0)
+            {
+                motor_backward(150,300);
+                motor_tank_turn(0, 150, 150, 400);
+                print_mqtt("Zumo018/turn", "Turned left!");
+            }
+            else
+            {
+                motor_backward(150,300);
+                motor_tank_turn(1, 150, 150, 400); 
+                print_mqtt("Zumo018/turn", "Turned right!");
+            }
+        }
+        else motor_forward(150, 0);  
+    }
+}  
+#endif
+
+// Week 5 Assignment 3
+#if 1    
+int black();
+void fwhite();
+TickType_t tid = 0, tid2 = 0;
+bool white = false, flag = false;
+int dir = 0, column = 0, row = 0;
+
+void zmain(void) 
+{
+    setup_motor();
+    power();
+
+    while (1) {
+        reflectance_read(&ref);
+        reflectance_digital(&dig);
+        motor_forward(SPEED, 0);
+        
+        if(dig.l3 == 1 && dig.r3 == 1) 
+        {
+            black();
+        }
+        else //line follow junk
+        {
+            light_ratio = (float)ref.l1 / ref.r1; 
+            // Left Turns    
+            if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
+                motor_turn(SPEED/light_ratio, SPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(SPEED*0.7/light_ratio, SPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(0, SPEED, 0);
+                
+            // Right Turns
+            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+                motor_turn(SPEED, SPEED * light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))      
+                motor_turn(SPEED, SPEED*0.7*light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)  
+                motor_turn(SPEED, 0, 0); 
+                
+            // Going Straight
+            else if(light_ratio == 1.0)
+                motor_turn(SPEED, SPEED, 0);
+        }
+    }
+}
+
+int black()
+{
+    count++;
+    motor_forward(0, 0);
+    IR_flush();
+    IR_wait();
+    if(count == 1) tid = xTaskGetTickCount(); 
+    if(count > 1) print_mqtt("Zumo018/lap", "Elapsed time: %d", xTaskGetTickCount() - tid);
+    while(dig.l3 != 0 || dig.r3 != 0) 
+    {
+        reflectance_digital(&dig);
+        motor_forward(SPEED, 0);
+    }
+    return tid;
+}
+#endif
+
 // Maze stuff
 #if 0
 int black();
@@ -764,147 +905,6 @@ void drive_to_line()
         motor_forward(50,0);
         if(dig.l3 == 1 && dig.r3 == 1) break;
     }
-}
-#endif
-
-// Week 5 Assignment 1
-#if 0
-void zmain(void)
-{    
-    int hour = 0, min = 0;
-    RTC_Start(); // start real time clock
-    RTC_TIME_DATE now;
-
-    // set current time
-    now.Sec = 0;
-    now.Min = 0;
-    now.Hour = 0;
-    now.DayOfMonth = 29;
-    now.Month = 11;
-    now.Year = 2018;
-    printf("Enter the hour \n");
-    scanf("%d", &hour);
-    now.Hour = hour;
-    printf("Enter the minutes \n");
-    scanf("%d", &min);
-    now.Min = min;
-    
-    RTC_WriteTime(&now); 
-
-    
-    for(;;)
-    {
-        if(SW1_Read() == 0) {
-            // read the current time
-            RTC_DisableInt(); // Disable Interrupt of RTC Component
-            now = *RTC_ReadTime(); // copy the current time to a local variable 
-            RTC_EnableInt(); // Enable Interrupt of RTC Component
-
-            // print the current time
-            print_mqtt("Zumo018/time", "%2d:%02d.%02d\n", now.Hour, now.Min, now.Sec);
-            
-            // wait until button is released
-            while(SW1_Read() == 0) vTaskDelay(50);
-        }
-        vTaskDelay(50);
-    }
- }   
-#endif
-
-// Week 5 Assignment 2
-#if 0
-void zmain(void)
-{
-    TickType_t time = xTaskGetTickCount();
-    setup_motor();
-    power();
-    
-    while(1)
-    {
-        int d = Ultra_GetDistance(); // d is distance in cm
-        printf("distance = %d\r\n", d);
-        if( d <= 10 )
-        {   
-            if((xTaskGetTickCount() - time) % 2 == 0)
-            {
-                motor_backward(150,300);
-                motor_tank_turn(0, 150, 150, 400);
-                print_mqtt("Zumo018/turn", "Turned left!");
-            }
-            else
-            {
-                motor_backward(150,300);
-                motor_tank_turn(1, 150, 150, 400); 
-                print_mqtt("Zumo018/turn", "Turned right!");
-            }
-        }
-        else motor_forward(150, 0);  
-    }
-}  
-#endif
-
-// Week 5 Assignment 3
-#if 1    
-int black();
-void fwhite();
-TickType_t tid = 0, tid2 = 0;
-bool white = false, flag = false;
-int dir = 0, column = 0, row = 0;
-
-void zmain(void) 
-{
-    setup_motor();
-    power();
-
-    while (1) {
-        reflectance_read(&ref);
-        reflectance_digital(&dig);
-        motor_forward(SPEED, 0);
-        
-        if(dig.l3 == 1 && dig.r3 == 1) 
-        {
-            black();
-        }
-        else //line follow junk
-        {
-            light_ratio = (float)ref.l1 / ref.r1; 
-            // Left Turns    
-            if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
-                motor_turn(SPEED/light_ratio, SPEED, 0);
-            else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
-                motor_turn(SPEED*0.7/light_ratio, SPEED, 0);
-            else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
-                motor_turn(0, SPEED, 0);
-                
-            // Right Turns
-            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
-                motor_turn(SPEED, SPEED * light_ratio, 0);
-            else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))      
-                motor_turn(SPEED, SPEED*0.7*light_ratio, 0);
-            else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)  
-                motor_turn(SPEED, 0, 0); 
-                
-            // Going Straight
-            else if(light_ratio == 1.0)
-                motor_turn(SPEED, SPEED, 0);
-        }
-    }
-}
-
-int black()
-{
-    count++;
-    motor_forward(0, 0);
-    IR_flush();
-    IR_wait();
-    if(count == 1) tid = xTaskGetTickCount(); 
-    if(count > 1) print_mqtt("Zumo018/lap", "Elapsed time: %d", xTaskGetTickCount() - tid);
-    while(dig.l3 != 0 || dig.r3 != 0) 
-    {
-        reflectance_digital(&dig);
-        motor_forward(SPEED, 0);
-    }
-    return tid;
 }
 #endif
 
