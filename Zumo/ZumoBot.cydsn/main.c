@@ -739,7 +739,7 @@ int black()
 #endif
 
 // Sumo wrestling
-#if 1
+#if 0
 int turntime = 500;   
 int d = 0;
 void black();
@@ -815,7 +815,7 @@ void black()
 #endif 
 
 // Maze stuff
-#if 0
+#if 1
 int black();
 void fwhite();
 void intersect(int i);
@@ -875,7 +875,7 @@ void zmain(void) {
 
 int black()
 {
-    if(count == 1)
+    if(row == 1)
     {
         motor_forward(0,0);
         Beep(100, 50);
@@ -908,7 +908,7 @@ void fwhite()
     motor_forward(SPEED, tid2);
     if(flag == true) // If the robot has detected an obstacle
     {
-        count = 2; // Set the count to 2 so it knows to stop after travelling 2 rows/columns
+        count = 1; // Set the count to 2 so it knows to stop after travelling 2 rows/columns
         if(dir == 0)
         {
             if(column >= 0) //If we're in the middle or to the right of the middle, turn left
