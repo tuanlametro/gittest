@@ -62,8 +62,10 @@ void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay
 void power(void);
 bool button = false;
 void setup_motor();
+void drive_to_line();
 struct sensors_ dig;
 struct sensors_ ref;
+struct accData_ data;
 int count = 0;
 float light_ratio = 0;
 TickType_t time_start;
@@ -277,7 +279,6 @@ void zmain(void)
 
 // Week 3 Assignment 3
 #if 0
-struct accData_ data;
 int thresh = -5000;
 void acceltest(void);
 int randn(void);
@@ -673,7 +674,7 @@ void zmain(void)
 #endif
 
 // Week 5 Assignment 3
-#if 1
+#if 0
 int black();
 void fwhite();
 TickType_t tid = 0, tid2 = 0;
@@ -737,12 +738,87 @@ int black()
 }
 #endif
 
+// Sumo wrestling
+#if 1
+int turntime = 500;   
+int d = 0;
+void black();
+void drive_to_line();
+TickType_t tid = 0, tid2 = 0;
+bool white = false, flag = false;
+
+void zmain(void) 
+{
+    setup_motor();
+    power();
+    drive_to_line();
+    
+    while(1)
+    {
+        reflectance_digital(&dig);
+        d = Ultra_GetDistance(); // d is distance in cm
+        printf("distance = %d\r\n", d);
+        while( d <= 10 )
+        {
+            reflectance_digital(&dig);
+            if(dig.l3 == 1 || dig.r3 == 1) break;
+            d = Ultra_GetDistance();
+            motor_forward(MAXSPEED, 0);
+        }
+        LSM303D_Read_Acc(&data);
+        
+        if(dig.l3 == 1 || dig.r3 == 1)
+        {
+            count++;
+            black();
+        }
+    }
+}
+    
+void black()
+{
+    tid2 = xTaskGetTickCount();
+    if(count == 1)
+    {
+        motor_forward(0,0);
+        IR_wait();
+        tid = xTaskGetTickCount();
+
+        while(dig.l3 != 0 || dig.r3 != 0)
+        {
+            reflectance_digital(&dig);
+            motor_forward(SPEED, 0);
+        }
+    }
+
+    else
+    {
+        if(dig.l3 == 1)
+        {
+            while(tid < 500)
+            {
+                tid = xTaskGetTickCount() - tid2;
+                motor_tank_turn(1, SPEED, SPEED, 0);
+            }
+        }
+        
+        else if(dig.r3 == 1)
+        {
+            while(tid < 500)
+            {
+                tid = xTaskGetTickCount() - tid2;
+                motor_tank_turn(0, SPEED, SPEED, 0);
+            }
+        }
+    }
+}
+#endif 
+
 // Maze stuff
 #if 0
 int black();
 void fwhite();
 void intersect(int i);
-void drive_to_line();
 TickType_t tid = 0, tid2 = 0;
 bool white = false, flag = false;
 int dir = 0, column = 0, row = 0;
@@ -799,7 +875,7 @@ void zmain(void) {
 
 int black()
 {
-    if(row == 1 && dir == 0)
+    if(count == 1)
     {
         motor_forward(0,0);
         Beep(100, 50);
@@ -896,16 +972,6 @@ void intersect(int i)
     }
     white = false;
 }
-
-void drive_to_line()
-{
-    while(1)
-    {
-        reflectance_digital(&dig);
-        motor_forward(50,0);
-        if(dig.l3 == 1 && dig.r3 == 1) break;
-    }
-}
 #endif
 
 #if 0
@@ -954,29 +1020,6 @@ void zmain(void)
         // last = Will be useful for tracking black starting and stoppung lines.
     }
 }
-#endif
-
-#if 0
-// MQTT test
-void zmain(void)
-{
-    int ctr = 0;
-
-    printf("\nBoot\n");
-    send_mqtt("Zumo01/debug", "Boot");
-
-    //BatteryLed_Write(1); // Switch led on
-    BatteryLed_Write(0); // Switch led off
-
-    for(;;)
-    {
-        printf("Ctr: %d, Button: %d\n", ctr, SW1_Read());
-        print_mqtt("Zumo01/debug", "Ctr: %d, Button: %d", ctr, SW1_Read());
-
-        vTaskDelay(1000);
-        ctr++;
-    }
- }
 #endif
 
 #if 0
@@ -1080,5 +1123,15 @@ void setup_motor()
     IR_flush();
     reflectance_start();
     reflectance_set_threshold(15000,8000,16000,16000,8000,15000);
+}
+
+void drive_to_line()
+{
+    while(1)
+    {
+        reflectance_digital(&dig);
+        motor_forward(50,0);
+        if(dig.l3 == 1 && dig.r3 == 1) break;
+    }
 }
 /* [] END OF FILE */
