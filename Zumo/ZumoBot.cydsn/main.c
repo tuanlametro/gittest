@@ -51,7 +51,9 @@
 #define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
 #define SIZE 6
 #define MAXSPEED 255
-#define SPEED 150
+#define SPEED 255
+#include <math.h>
+#define PI 3.141592654
 
 /**
  * @file    main.c
@@ -67,6 +69,18 @@ struct sensors_ ref;
 int count = 0;
 float light_ratio = 0;
 TickType_t time_start;
+void drive_to_black();
+struct accData_ data;
+void acceltest(void);
+int rand(void);
+int seed(void);
+int first_dataX;
+int second_dataX;
+int first_dataY;
+int second_dataY;
+int diff_dataX;
+int diff_dataY;
+
 
 // Week 2 Assignment 1
 #if 0
@@ -597,7 +611,7 @@ void zmain(void)
 #endif
 
 // Maze stuff
-#if 1
+#if 0
 int black();
 void fwhite();
 void intersect(int i);
@@ -1055,6 +1069,70 @@ void zmain(void)
  }
 #endif
 
+#if 1
+    
+
+void zmain(void)
+{
+    TickType_t timestart, timeend;
+    setup_motor();
+    power();
+    drive_to_black();
+    print_mqtt("Zumo018/ready", "zumo");
+    IR_wait();
+    print_mqtt("Zumo018/start", "start");
+    timestart=xTaskGetTickCount();
+    motor_forward(SPEED, 500); 
+   
+    
+    while(button == true) 
+    {
+        reflectance_digital(&dig);
+        if(SW1_Read() == 0) button = false;
+        
+        if (dig.l3 == 1 || dig.l2 == 1 || dig.l1 == 1){
+            motor_backward(SPEED, 180);
+            motor_tank_turn(1, MAXSPEED, MAXSPEED, 180);
+        }
+        else if (dig.r3 == 1 || dig.r2 == 1 || dig.r1 == 1){
+            motor_backward(SPEED, 180);
+            motor_tank_turn(0, MAXSPEED, MAXSPEED, 200);
+        }
+        else if ((dig.r1 == 1 && dig.l1 == 1) || (dig.r2 == 1 && dig.l2 == 1) || (dig.r3 == 1 && dig.l3 == 1)){
+            motor_backward(SPEED, 200);
+            motor_tank_turn(0, MAXSPEED, MAXSPEED, 125);
+        } 
+        else {
+            motor_forward(SPEED,0);
+        }
+        
+        LSM303D_Read_Acc(&data);
+        first_dataX = data.accX;
+        second_dataX = data.accX;
+        first_dataY = data.accY;
+        second_dataY = data.accY;
+        diff_dataX = first_dataX - second_dataX;
+        diff_dataY = first_dataY - second_dataY;
+        
+        float tan = data.accY % 2 / data.accX % 2;
+        float result;
+
+        result = atan(tan); //angle in radians
+        result = (result * 180) / PI;  // Converting radians to degrees
+        
+        if (diff_dataX > 5000 || diff_dataY > 5000){
+            timeend = xTaskGetTickCount();
+            print_mqtt("Zumo018/hit", "Zumo018/hit %d %.2f\n", timeend, result);
+        }
+        motor_forward(0,0);
+    }
+    timeend = xTaskGetTickCount();
+    print_mqtt("Zumo018/stop", "%d", timeend);
+    print_mqtt("Zumo018/time", "Time is %d\n", timeend - timestart);    
+}   
+
+#endif
+
 // Our own functions
 
 void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay)
@@ -1080,6 +1158,24 @@ void setup_motor()
     IR_Start();
     IR_flush();
     reflectance_start();
-    reflectance_set_threshold(15000,8000,16000,16000,8000,15000);
+    reflectance_set_threshold(14000,8000,16000,16000,8000,14000);
+    LSM303D_Start();
 }
+//void check_hits()
+//{
+  //  if (0 || 0) {
+        // send hit message: zumo028/hit time   
+  
+
+void drive_to_black()
+{
+    while(1){
+        motor_forward(50,0);
+        reflectance_digital(&dig);
+        if(dig.l3 == 1 || dig.r3 == 1){
+            break;
+        }
+    }
+    motor_forward(0,0);
+}   
 /* [] END OF FILE */
