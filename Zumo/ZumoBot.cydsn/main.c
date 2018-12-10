@@ -814,7 +814,7 @@ void black()
 #endif 
 
 // Line Following
-#if 1
+#if 0
 
 void black();
 void zmain(void) 
@@ -868,7 +868,7 @@ void black()
 #endif
 
 // Maze stuff
-#if 0
+#if 1
 void black();
 void pathfind();
 void intersect(int i);
@@ -906,6 +906,11 @@ void zmain(void)
     {
         reflectance_digital(&dig);
         
+        if(dir == 0 && y == 1)
+            dig.l3 = 1;
+        else if(dir == 0 && y == 7)
+            dig.r3 = 1; // Lets the robot operate normally on the edge of the grid where it only sees black on one side.
+        
         if(exception == true)
             pathfind();
             
@@ -918,7 +923,8 @@ void zmain(void)
         }
         else
             linefollow(150);
-        }     
+    }  
+
     finish();
 }
 
