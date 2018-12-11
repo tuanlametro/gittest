@@ -1107,24 +1107,30 @@ void zmain(void)
         }
         
         LSM303D_Read_Acc(&data);
-        first_dataX = data.accX;
-        second_dataX = data.accX;
-        first_dataY = data.accY;
-        second_dataY = data.accY;
-        diff_dataX = first_dataX - second_dataX;
-        diff_dataY = first_dataY - second_dataY;
         
-        float tan = data.accY % 2 / data.accX % 2;
+
+        diff_dataX = data.accX - second_dataX;
+        diff_dataY = data.accY - second_dataY;
+        
+        //print_mqtt("Zumo018/diff", "X %d Y %d", diff_dataX, diff_dataY);  
+        
+        float tan = data.accY / data.accX;
         float result;
 
         result = atan(tan); //angle in radians
         result = (result * 180) / PI;  // Converting radians to degrees
         
-        if (diff_dataX > 5000 || diff_dataY > 5000){
+        if (diff_dataX > 6000 || diff_dataY > 6000){
+            timeend = xTaskGetTickCount();
+            print_mqtt("Zumo018/hit", "Zumo018/hit %d %.2f\n", timeend, result);
+        }
+        else if (diff_dataX < -6000 || diff_dataY < -6000) {
             timeend = xTaskGetTickCount();
             print_mqtt("Zumo018/hit", "Zumo018/hit %d %.2f\n", timeend, result);
         }
         motor_forward(0,0);
+        second_dataX = data.accX;
+        second_dataY = data.accY;
     }
     timeend = xTaskGetTickCount();
     print_mqtt("Zumo018/stop", "%d", timeend);
