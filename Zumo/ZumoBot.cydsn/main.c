@@ -941,7 +941,7 @@ void black()
         motor_forward(0,0);
         IR_wait();
         time_start = xTaskGetTickCount();
-        print_mqtt("Zumo018/start", "%d", tid);
+        print_mqtt("Zumo018/start", "%d", time_start);
         while(dig.l3 != 0 || dig.r3 != 0)
         {
             reflectance_digital(&dig);
