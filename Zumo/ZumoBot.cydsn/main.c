@@ -51,7 +51,7 @@
 #define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
 #define SIZE 6
 #define MAXSPEED 255
-#define SPEED 100
+#define SPEED 150
 
 /**
  * @file    main.c
@@ -874,7 +874,7 @@ void pathfind();
 void intersect(int i);
 void block();
 TickType_t tid = 0, tid2 = 0;
-bool exception = false;
+bool exception = false, inmaze = true;
 int dir = 0, dumdir = 0, x = 15, y = 4, dx = 0, dy = 0, d = 0;
 // Dir 0 is N, Dir 1 is E, Dir -1 is W, and nothing is S. We avoid S at all costs.
 int grid[15][9] = //0 - 14 rows, 0 - 8 columns 
@@ -895,7 +895,14 @@ int grid[15][9] = //0 - 14 rows, 0 - 8 columns
     {1, 0, 0, 0, 0, 0, 0, 0, 1},
     {1, 0, 0, 0, 0, 0, 0, 0, 1}, //Wait for IR happens at [14][4]
 };
+
+void turn180(int i)
+{
     
+    intersect(i);
+    intersect(i);
+}
+
 void zmain(void) 
 {
     setup_motor();
@@ -911,18 +918,18 @@ void zmain(void)
         else if(dir == 0 && y == 7)
             dig.r3 = 1; // Lets the robot operate normally on the edge of the grid where it only sees black on one side.
         
-        if(exception == true)
-            pathfind();
+        /*if(exception == true)
+            pathfind();*/
             
         if(dig.l3 == 1 && dig.r3 == 1)
         {                
             black();
             block();
-            motor_forward(SPEED, tid); // Move past the black line to a distance equal to the width of the black line.
-            pathfind(); 
+            motor_forward(SPEED, tid/2);      
+            pathfind();
         }
         else
-            linefollow(150);
+            linefollow(255);
     }  
 
     finish();
@@ -982,57 +989,57 @@ void block()
     
     d = Ultra_GetDistance();
     
-    if(d < 20) // If an object is within 20 centimetres of the robot...
+    if(d < 18) // If an object is within 20 centimetres of the robot...
     {
-        grid[x+dx][y+dy] = 1; // The intersection ahead of the robot is switched to a 1 
+        //grid[x+dx][y+dy] = 1;
+        grid[x-1][y] = 1, grid[x-1][y-1] = 1, grid[x-1][y+1] = 1;
+        // The intersection ahead of the robot is switched to a 1 
+        
         if(dir != 0)
         {
             /* This ensures that if the robot wanted to turn towards the centre column but was obstructed,
             then its final dir will be in the opposition direction of its initial dir.*/
-            
             exception = true;
             dumdir = dir * -1;
             grid[x-1][y+dy] = 1; // This coordinate is flipped so it is no longer considered a possible pathway by pathfind()
-        }     
-    }
+        } 
+        pathfind();
+    }      
+
 }
 
 void pathfind()
 {    
-    /*if(dir == 0)
-        Beep(50, 50);
-    else if(dir == 1)
+    if(exception == true)
     {
-        Beep(50, 50);
-        vTaskDelay(50);
-        Beep(50, 50);
+        if(dir == 1)
+            turn180(0);
+        else if(dir == -1)
+            turn180(1);
     }
-    else if(dir == -1)
-    {
-        Beep(50, 50);
-        vTaskDelay(50);
-        Beep(50, 50);
-        vTaskDelay(50);
-        Beep(50, 50);
-    } rem */
-        
-    if(grid[x+dx][y+dy] == 0) // If the intersection in front of us has no obstacle...
+    
+    else if(grid[x+dx][y+dy] == 0) // If the intersection in front of us has no obstacle...
     {
         if(dir == 0) 
             return; // and the robot is facing forwards towards the exit, then exit function.
         else if(dir == 1)
         {
-            intersect(0); // and the robot is facing to the right, then turn left.
+            if(grid[x-1][y] == 0)
+                intersect(0); // and the robot is facing to the right, then turn left.
+            else
+                return;
         }
         else if(dir == -1) 
         {
-            intersect(1); // and the robot is facing to the left, then turn right.
+            if(grid[x-1][y] == 0)
+                intersect(1);
+            else
+                return; // and the robot is facing to the left, then turn right.
         }
     }
             
     else if(grid[x+dx][y+dy] == 1) // If the intersection in front of us has a block on it...
     {
-        motor_forward(0, 50);
         if(y <= 4) // and the robot is to the left of centre
         {
             if(grid[x-1][y+1] == 0 && grid[x][y+1] == 0) // then first check if path to the right of robot is clear.
@@ -1058,11 +1065,14 @@ void pathfind()
         }
     }
     
-    if(exception == true) 
+    /*if
+    
+    (exception == true) 
     {
         dir = dumdir; 
         exception = false; // Dir is replaced with the dumdir value from the block() function and exception is turned off.
-    }
+    }*/
+    exception = false;
     block();
 }
 
@@ -1073,7 +1083,8 @@ void intersect(int i)
     else if(i == 1)
         dir++;
     // If the robot is turning left, the direction must be decrementing and vice versa.
-
+    
+    motor_forward(0, 200);
     while(1)
     {
         reflectance_digital(&dig);
@@ -1081,7 +1092,7 @@ void intersect(int i)
         motor_tank_turn(i, SPEED, SPEED, 0);
         if(dig.l1 == 0 && dig.r1 == 0) white = true;
         
-        if(dig.l1 == 1 && dig.r1 == 1 && white == true)
+        if(dig.l1 == 1 && dig.r1 == 1 && dig.r2 == 0 && dig.l2 == 0 && white == true)
             break;
     }
     white = false;
@@ -1118,7 +1129,7 @@ void setup_motor()
     IR_Start();
     IR_flush();
     reflectance_start();
-    reflectance_set_threshold(15000,15000,15000,15000,15000,15000); // was 16k
+    reflectance_set_threshold(15000,12000,15000,15000,12000,15000); // was 16k
 }
 
 void drive_to_line()
@@ -1127,8 +1138,8 @@ void drive_to_line()
     {
         reflectance_digital(&dig);
         if(dig.l3 == 1 && dig.r3 == 1) break;
-        else linefollow(50);
-        //motor_forward(50,0); // Can be changed to linefollow       
+        else
+            motor_forward(50,0); // Can be changed to linefollow       
     }
     print_mqtt("Zumo018/line", "Ready!"); 
 }
