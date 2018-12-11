@@ -70,7 +70,19 @@ struct sensors_ ref;
 struct accData_ data;
 int count = 0;
 float light_ratio = 0;
-TickType_t time_start, time_end;
+TickType_t time_start, time_end;;
+void drive_to_black();
+struct accData_ data;
+void acceltest(void);
+int rand(void);
+int seed(void);
+int first_dataX;
+int second_dataX;
+int first_dataY;
+int second_dataY;
+int diff_dataX;
+int diff_dataY;
+
 
 // Week 2 Assignment 1
 #if 0
@@ -740,18 +752,18 @@ int black()
 
 // Sumo wrestling
 #if 0
-int turntime = 500;   
+int turntime = 500;
 int d = 0;
 void black();
 void drive_to_line();
 TickType_t tid = 0, tid2 = 0;
 
-void zmain(void) 
+void zmain(void)
 {
     setup_motor();
     power();
     drive_to_line();
-    
+
     while(1)
     {
         reflectance_digital(&dig);
@@ -765,7 +777,7 @@ void zmain(void)
             motor_forward(MAXSPEED, 0);
         }
         LSM303D_Read_Acc(&data);
-        
+
         if(dig.l3 == 1 || dig.r3 == 1)
         {
             count++;
@@ -773,7 +785,7 @@ void zmain(void)
         }
     }
 }
-    
+
 void black()
 {
     tid2 = xTaskGetTickCount();
@@ -800,7 +812,7 @@ void black()
                 motor_tank_turn(1, SPEED, SPEED, 0);
             }
         }
-        
+
         else if(dig.r3 == 1)
         {
             while(tid < 500)
@@ -811,26 +823,26 @@ void black()
         }
     }
 }
-#endif 
+#endif
 
 // Line Following
 #if 0
 
 void black();
-void zmain(void) 
+void zmain(void)
 {
     setup_motor();
     power();
     drive_to_line();
-            
+
         while(count < 3)
         {
             reflectance_read(&ref);
-            reflectance_digital(&dig); 
+            reflectance_digital(&dig);
 
             if(dig.l3 == 1 && dig.r3 == 1)
                 black();
-            
+
             linefollow(255); //Max speed
         }
     print_mqtt("Zumo018", "Time: %d", xTaskGetTickCount() - time_start);
@@ -839,7 +851,7 @@ void zmain(void)
 
 void black()
 {
-    /* This function serves to move the robot over a black line while only counting it once. 
+    /* This function serves to move the robot over a black line while only counting it once.
     If the count is at the starting position, the function waits for IR input. A timestamp is taken after IR input is given. */
     if(count == 0)
     {
@@ -852,8 +864,8 @@ void black()
             reflectance_digital(&dig);
             motor_forward(SPEED, 0);
         }
-    
-    
+
+
     /*else
     {
         while(dig.l3 != 0 || dig.r3 != 0)
@@ -864,7 +876,7 @@ void black()
     }*/
     count++;
 }
-    
+
 #endif
 
 // Maze stuff
@@ -877,9 +889,9 @@ TickType_t tid = 0, tid2 = 0;
 bool exception = false, inmaze = true;
 int dir = 0, dumdir = 0, x = 15, y = 4, dx = 0, dy = 0, d = 0;
 // Dir 0 is N, Dir 1 is E, Dir -1 is W, and nothing is S. We avoid S at all costs.
-int grid[15][9] = //0 - 14 rows, 0 - 8 columns 
-{  
-    {1, 1, 1, 0, 0, 0, 1, 1, 1}, 
+int grid[15][9] = //0 - 14 rows, 0 - 8 columns
+{
+    {1, 1, 1, 0, 0, 0, 1, 1, 1},
     {1, 1, 0, 0, 0, 0, 0, 1, 1},
     {1, 0, 0, 0, 0, 0, 0, 0, 1},
     {1, 0, 0, 0, 0, 0, 0, 0, 1},
@@ -898,54 +910,54 @@ int grid[15][9] = //0 - 14 rows, 0 - 8 columns
 
 void turn180(int i)
 {
-    
+
     intersect(i);
     intersect(i);
 }
 
-void zmain(void) 
+void zmain(void)
 {
     setup_motor();
     power();
     drive_to_line();
 
-    while(x > 0) 
+    while(x > 0)
     {
         reflectance_digital(&dig);
-        
+
         if(dir == 0 && y == 1)
             dig.l3 = 1;
         else if(dir == 0 && y == 7)
             dig.r3 = 1; // Lets the robot operate normally on the edge of the grid where it only sees black on one side.
-        
+
         /*if(exception == true)
             pathfind();*/
-            
+
         if(dig.l3 == 1 && dig.r3 == 1)
-        {                
+        {
             black();
             block();
-            motor_forward(SPEED, tid/2);      
+            motor_forward(SPEED, tid/2);
             pathfind();
         }
         else
             linefollow(255);
-    }  
+    }
 
     finish();
 }
 
 void black()
-{   
+{
     /* Same as with the black() function in the line follow program, this function serves to move the robot over a black line
     while only counting it once. If the count is at the starting position, the function waits for IR input. */
-    
+
     if(x == 15)
     {
         motor_forward(0,0);
         IR_wait();
         time_start = xTaskGetTickCount();
-        print_mqtt("Zumo018/start", "Start time: %d", tid); 
+        print_mqtt("Zumo018/start", "Start time: %d", tid);
         while(dig.l3 != 0 || dig.r3 != 0)
         {
             reflectance_digital(&dig);
@@ -962,7 +974,7 @@ void black()
             motor_forward(SPEED, 0);
         }
     }
-    
+
     if(dir == 0)
     {
         //motor_forward(0,0); // rem
@@ -972,29 +984,26 @@ void black()
         y--;
     else if(dir == 1)
         y++;
-    
+
     print_mqtt("Zumo018/position", "Current Pos: %d, %d", x, y);
 }
 
-void block() 
-{ 
+void block()
+{
     if(dir == 0)
         dx = -1, dy = 0;
     else if(dir == -1)
         dx = 0, dy = -1;
     else if(dir == 1)
         dx = 0, dy = 1;
-    /* This series of if/else statements expands current dir into two numbers (dx, dy) that can be added to 
+    /* This series of if/else statements expands current dir into two numbers (dx, dy) that can be added to
     the current position (x, y) to find the position of the intersection ahead of the robot. */
-    
+
     d = Ultra_GetDistance();
-    
-    if(d < 18) // If an object is within 20 centimetres of the robot...
+
+    if(d < 20) // If an object is within 20 centimetres of the robot...
     {
-        //grid[x+dx][y+dy] = 1;
-        grid[x-1][y] = 1, grid[x-1][y-1] = 1, grid[x-1][y+1] = 1;
-        // The intersection ahead of the robot is switched to a 1 
-        
+        grid[x+dx][y+dy] = 1; // The intersection ahead of the robot is switched to a 1
         if(dir != 0)
         {
             /* This ensures that if the robot wanted to turn towards the centre column but was obstructed,
@@ -1002,14 +1011,14 @@ void block()
             exception = true;
             dumdir = dir * -1;
             grid[x-1][y+dy] = 1; // This coordinate is flipped so it is no longer considered a possible pathway by pathfind()
-        } 
+        }
         pathfind();
-    }      
+    }
 
 }
 
 void pathfind()
-{    
+{
     if(exception == true)
     {
         if(dir == 1)
@@ -1017,10 +1026,10 @@ void pathfind()
         else if(dir == -1)
             turn180(1);
     }
-    
+
     else if(grid[x+dx][y+dy] == 0) // If the intersection in front of us has no obstacle...
     {
-        if(dir == 0) 
+        if(dir == 0)
             return; // and the robot is facing forwards towards the exit, then exit function.
         else if(dir == 1)
         {
@@ -1029,7 +1038,7 @@ void pathfind()
             else
                 return;
         }
-        else if(dir == -1) 
+        else if(dir == -1)
         {
             if(grid[x-1][y] == 0)
                 intersect(1);
@@ -1037,17 +1046,17 @@ void pathfind()
                 return; // and the robot is facing to the left, then turn right.
         }
     }
-            
+
     else if(grid[x+dx][y+dy] == 1) // If the intersection in front of us has a block on it...
     {
         if(y <= 4) // and the robot is to the left of centre
         {
             if(grid[x-1][y+1] == 0 && grid[x][y+1] == 0) // then first check if path to the right of robot is clear.
-            {    
+            {
                 intersect(1);
             }
             else if(grid[x-1][y-1] == 0) // otherwise, check the left.
-            {    
+            {
                 intersect(0);
             }
         }
@@ -1057,19 +1066,17 @@ void pathfind()
             {
                 intersect(0);
             }
-                
+
             else if(grid[x-1][y+1] == 0)
             {
                 intersect(1);
             }
         }
     }
-    
-    /*if
-    
-    (exception == true) 
+
+    if(exception == true)
     {
-        dir = dumdir; 
+        dir = dumdir;
         exception = false; // Dir is replaced with the dumdir value from the block() function and exception is turned off.
     }*/
     exception = false;
@@ -1077,13 +1084,13 @@ void pathfind()
 }
 
 void intersect(int i)
-{   
+{
     if(i == 0)
         dir--;
     else if(i == 1)
         dir++;
     // If the robot is turning left, the direction must be decrementing and vice versa.
-    
+
     motor_forward(0, 200);
     while(1)
     {
@@ -1091,7 +1098,7 @@ void intersect(int i)
 
         motor_tank_turn(i, SPEED, SPEED, 0);
         if(dig.l1 == 0 && dig.r1 == 0) white = true;
-        
+
         if(dig.l1 == 1 && dig.r1 == 1 && dig.r2 == 0 && dig.l2 == 0 && white == true)
             break;
     }
@@ -1099,8 +1106,76 @@ void intersect(int i)
     motor_forward(0,0); // Returns motors to normal after the tank turn.
 }
 
+#if 1
+
+
+void zmain(void)
+{
+    TickType_t timestart, timeend;
+    setup_motor();
+    power();
+    drive_to_black();
+    print_mqtt("Zumo018/ready", "zumo");
+    IR_wait();
+    print_mqtt("Zumo018/start", "start");
+    timestart=xTaskGetTickCount();
+    motor_forward(SPEED, 500);
+
+
+    while(button == true)
+    {
+        reflectance_digital(&dig);
+        if(SW1_Read() == 0) button = false;
+
+        if (dig.l3 == 1 || dig.l2 == 1 || dig.l1 == 1){
+            motor_backward(SPEED, 180);
+            motor_tank_turn(1, MAXSPEED, MAXSPEED, 180);
+        }
+        else if (dig.r3 == 1 || dig.r2 == 1 || dig.r1 == 1){
+            motor_backward(SPEED, 180);
+            motor_tank_turn(0, MAXSPEED, MAXSPEED, 200);
+        }
+        else if ((dig.r1 == 1 && dig.l1 == 1) || (dig.r2 == 1 && dig.l2 == 1) || (dig.r3 == 1 && dig.l3 == 1)){
+            motor_backward(SPEED, 200);
+            motor_tank_turn(0, MAXSPEED, MAXSPEED, 125);
+        }
+        else {
+            motor_forward(SPEED,0);
+        }
+
+        LSM303D_Read_Acc(&data);
+
+
+        diff_dataX = data.accX - second_dataX;
+        diff_dataY = data.accY - second_dataY;
+
+        //print_mqtt("Zumo018/diff", "X %d Y %d", diff_dataX, diff_dataY);
+
+        float tan = data.accY / data.accX;
+        float result;
+
+        result = atan(tan); //angle in radians
+        result = (result * 180) / PI;  // Converting radians to degrees
+
+        if (diff_dataX > 6000 || diff_dataY > 6000){
+            timeend = xTaskGetTickCount();
+            print_mqtt("Zumo018/hit", "Zumo018/hit %d %.2f\n", timeend, result);
+        }
+        else if (diff_dataX < -6000 || diff_dataY < -6000) {
+            timeend = xTaskGetTickCount();
+            print_mqtt("Zumo018/hit", "Zumo018/hit %d %.2f\n", timeend, result);
+        }
+        motor_forward(0,0);
+        second_dataX = data.accX;
+        second_dataY = data.accY;
+    }
+    timeend = xTaskGetTickCount();
+    print_mqtt("Zumo018/stop", "%d", timeend);
+    print_mqtt("Zumo018/time", "Time is %d\n", timeend - timestart);
+}
+
 #endif
-        
+
 // Our own functions
 
 void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay)
@@ -1129,7 +1204,8 @@ void setup_motor()
     IR_Start();
     IR_flush();
     reflectance_start();
-    reflectance_set_threshold(15000,12000,15000,15000,12000,15000); // was 16k
+    reflectance_set_threshold(15000,15000,15000,15000,15000,15000); // was 16k
+    LSM303D_Start();
 }
 
 void drive_to_line()
@@ -1139,26 +1215,26 @@ void drive_to_line()
         reflectance_digital(&dig);
         if(dig.l3 == 1 && dig.r3 == 1) break;
         else
-            motor_forward(50,0); // Can be changed to linefollow       
+            motor_forward(50,0); // Can be changed to linefollow
     }
-    print_mqtt("Zumo018/line", "Ready!"); 
+    print_mqtt("Zumo018/line", "Ready!");
 }
 
 void linefollow(int x)
 {
     reflectance_read(&ref);
     reflectance_digital(&dig);
-    int most = 20000;          
+    int most = 20000;
     if(ref.l1 >= most) ref.l1 = most;
-    else if(ref.r1 >= most) ref.r1 = most; 
+    else if(ref.r1 >= most) ref.r1 = most;
     light_ratio = (float)ref.l1 / ref.r1; // A ratio is found between the two middle sensors and applied to the motor speed.
-    
+
     // Left Turns
     if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
         motor_turn(x/light_ratio, x, 0);
     else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
         motor_turn(x*0.7/light_ratio, x, 0);
-    else if(dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1)) //light_ratio > 1.0 &&  
+    else if(dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1)) //light_ratio > 1.0 &&
         motor_turn(0, x, 0);
 
     // Right Turns
@@ -1179,8 +1255,8 @@ void finish()
     // All the stuff the robot should do after it has reached the end of its task.
     motor_forward(0, 0);
     time_end = xTaskGetTickCount() - time_start;
-    print_mqtt("Zumo018/stop", "Stop time: %d", time_end); 
-    print_mqtt("Zumo018/time", "Run tim: %d", time_end - time_start);  
+    print_mqtt("Zumo018/stop", "Stop time: %d", time_end);
+    print_mqtt("Zumo018/time", "Run tim: %d", time_end - time_start);
 }
 
 /* [] END OF FILE */
