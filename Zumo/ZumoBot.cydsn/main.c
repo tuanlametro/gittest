@@ -860,9 +860,9 @@ void black();
 void pathfind();
 void intersect(int i);
 void block();
-TickType_t tid = 0, tid2 = 0;
-bool exception = false, inmaze = true;
-int dir = 0, dumdir = 0, x = 15, y = 4, dx = 0, dy = 0, d = 0;
+TickType_t tid = 0;
+bool exception = false;
+int dir = 0, dumdir = 0, x = 4, y = 15, dx = 0, dy = 0, d = 0;
 // Dir 0 is N, Dir 1 is E, Dir -1 is W, and nothing is S. We avoid S at all costs.
 int grid[15][9] = //0 - 14 rows, 0 - 8 columns
 {
@@ -889,7 +889,7 @@ void zmain(void)
     power();
     drive_to_line(3);
 
-    while(x > 0)
+    while(y > 0)
     {
         reflectance_digital(&dig);
 
@@ -907,12 +907,12 @@ void zmain(void)
             linefollow(255);
     }
     
-    if(y > 4)
+    if(x > 4)
         intersect(0);
-    else if(y < 4)
+    else if(x < 4)
         intersect(1);
 
-    while(y != 4)
+    while(x != 4)
     {
         if(dig.l3 == 1 || dig.r3 == 1)
             black(); 
@@ -936,7 +936,7 @@ void black()
     /* Same as with the black() function in the line follow program, this function serves to move the robot over a black line
     while only counting it once. If the count is at the starting position, the function waits for IR input. */
 
-    if(x == 15)
+    if(y == 15)
     {
         motor_forward(0,0);
         IR_wait();
@@ -959,22 +959,22 @@ void black()
         }
     }
     if(dir == 0)
-        x--;
-    else if(dir == -1)
         y--;
+    else if(dir == -1)
+        x--;
     else if(dir == 1)
-        y++;
-    print_mqtt("Zumo018/position", "%d, %d", y, x);
+        x++;
+    print_mqtt("Zumo018/position", "%d, %d", x, y);
 }
 
 void block()
 {
     if(dir == 0)
-        dx = -1, dy = 0;
-    else if(dir == -1)
         dx = 0, dy = -1;
+    else if(dir == -1)
+        dx = -1, dy = 0;
     else if(dir == 1)
-        dx = 0, dy = 1;
+        dx = 1, dy = 0;
     /* This series of if/else statements expands current dir into two numbers (dx, dy) that can be added to
     the current position (x, y) to find the position of the intersection ahead of the robot. */
 
@@ -989,9 +989,9 @@ void block()
             then its final dir will be in the opposition direction of its initial dir.*/
             exception = true;
             dumdir = dir * -1;
-            grid[x-1][y+dy] = 1; // This coordinate is flipped so it is no longer considered a possible pathway by pathfind()
+            grid[x+dx][y-1] = 1; // This coordinate is flipped so it is no longer considered a possible pathway by pathfind()
         }
-        else if(dir == 0 && (grid[x-1][y-1] == 1 || grid[x-1][y-1] == 1))
+        else if(dir == 0 && (grid[x-1][y-1] == 1 || grid[x+1][y-1] == 1))
             exception = true;
     }
 
@@ -999,7 +999,7 @@ void block()
 
 void pathfind()
 {
-    if(grid[x+dx][y+dy] == 0 && grid[x-1][y] == 0) // If the intersection in front of us has no obstacle...
+    if(grid[x+dx][y+dy] == 0 && grid[x][y-1] == 0) // If the intersection in front of us has no obstacle...
     {
         if(dir == 0)
             return; // and the robot is facing forwards towards the exit, then exit function.
@@ -1011,19 +1011,19 @@ void pathfind()
 
     else if(grid[x+dx][y+dy] == 1) // If the intersection in front of us has a block on it...
     {
-        if(y <= 4) // and the robot is to the left of centre
+        if(x <= 4) // and the robot is to the left of centre
         {
-            if((grid[x-1][y+1] == 0 && grid[x][y+1] == 0) || y == 1) // then first check if path to the right of robot is clear.
+            if((grid[x+1][y-1] == 0 && grid[x+1][y] == 0) || x == 1) // then first check if path to the right of robot is clear.
                 intersect(1);
             else if(grid[x-1][y-1] == 0) // otherwise, check the left.
                 intersect(0);
         }
-        else if(y > 4) // Vice versa to the above If's operations.
+        else if(x > 4) // Vice versa to the above If's operations.
         {
-            if((grid[x-1][y-1] == 0 && grid[x][y-1] == 0) || y == 7)
+            if((grid[x-1][y-1] == 0 && grid[x-1][y] == 0) || x == 7)
                 intersect(0);
 
-            else if(grid[x-1][y+1] == 0)
+            else if(grid[x+1][y-1] == 0)
                 intersect(1);
         }
     }
