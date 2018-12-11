@@ -47,11 +47,13 @@
 #include "serial1.h"
 #include <unistd.h>
 #include <stdlib.h>
+#include <math.h>
 #define coeff 5/4095 /*Vref divided by the number of steps between 0 and max*/
 #define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
 #define SIZE 6
 #define MAXSPEED 255
 #define SPEED 150
+#define PI 3.141592654
 
 /**
  * @file    main.c
@@ -1078,7 +1080,7 @@ void pathfind()
     {
         dir = dumdir;
         exception = false; // Dir is replaced with the dumdir value from the block() function and exception is turned off.
-    }*/
+    }
     exception = false;
     block();
 }
@@ -1106,8 +1108,10 @@ void intersect(int i)
     motor_forward(0,0); // Returns motors to normal after the tank turn.
 }
 
-#if 1
+#endif 
 
+// Sumo Fight
+#if 0
 
 void zmain(void)
 {
