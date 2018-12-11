@@ -61,29 +61,18 @@
  * @details  ** Enable global interrupt since Zumo library uses interrupts. **<br>&nbsp;&nbsp;&nbsp;CyGlobalIntEnable;<br>
 */
 void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay);
-void power(void);
-void linefollow(int x);
+void power();
 void setup_motor();
-void drive_to_line(int i);
+void drive_to_line(int x);
+void linefollow(int x);
 void finish();
 bool button = false, white = false, flag = false;
 struct sensors_ dig;
 struct sensors_ ref;
 struct accData_ data;
-int count = 0;
+int count = 0, last_dataX, last_dataY, diff_dataX, diff_dataY;
 float light_ratio = 0;
 TickType_t time_start, time_end;;
-void drive_to_black();
-struct accData_ data;
-void acceltest(void);
-int rand(void);
-int seed(void);
-int first_dataX;
-int second_dataX;
-int first_dataY;
-int second_dataY;
-int diff_dataX;
-int diff_dataY;
 
 
 // Week 2 Assignment 1
@@ -753,14 +742,16 @@ int black()
 #endif
 
 // Sumo Fight
-#if 0
+#if 1
+float result = 0;
+    
 void zmain(void)
 {
     setup_motor();
     power();
     drive_to_line(1);
     IR_wait();
-    time_start=xTaskGetTickCount();
+    time_start = xTaskGetTickCount();
     print_mqtt("Zumo018/start", "%d", time_start);
     
     motor_forward(MAXSPEED, 500);
@@ -771,33 +762,34 @@ void zmain(void)
         reflectance_digital(&dig);
         if(SW1_Read() == 0) button = false;
 
-        if (dig.l3 == 1 || dig.l2 == 1 || dig.l1 == 1){
+        if (dig.l3 == 1 || dig.l2 == 1 || dig.l1 == 1)
+        {
             motor_backward(MAXSPEED, 180);
             motor_tank_turn(1, MAXSPEED, MAXSPEED, 180);
         }
-        else if (dig.r3 == 1 || dig.r2 == 1 || dig.r1 == 1){
+        else if (dig.r3 == 1 || dig.r2 == 1 || dig.r1 == 1)
+        {
             motor_backward(MAXSPEED, 180);
             motor_tank_turn(0, MAXSPEED, MAXSPEED, 200);
         }
-        else if ((dig.r1 == 1 && dig.l1 == 1) || (dig.r2 == 1 && dig.l2 == 1) || (dig.r3 == 1 && dig.l3 == 1)){
+        else if ((dig.r1 == 1 && dig.l1 == 1) || (dig.r2 == 1 && dig.l2 == 1) || (dig.r3 == 1 && dig.l3 == 1))
+        {
             motor_backward(MAXSPEED, 200);
             motor_tank_turn(0, MAXSPEED, MAXSPEED, 125);
         }
-        else {
+        else
             motor_forward(MAXSPEED,0);
-        }
 
         LSM303D_Read_Acc(&data);
 
 
-        diff_dataX = data.accX - second_dataX;
-        diff_dataY = data.accY - second_dataY;
+        diff_dataX = data.accX - last_dataX;
+        diff_dataY = data.accY - last_dataY;
 
         //print_mqtt("Zumo018/diff", "X %d Y %d", diff_dataX, diff_dataY);
 
         float tan = data.accY / data.accX;
-        float result;
-
+        
         result = atan(tan); //angle in radians
         result = (result * 180) / PI;  // Converting radians to degrees
 
@@ -808,8 +800,8 @@ void zmain(void)
             print_mqtt("Zumo018/hit", "%d %.2f\n", xTaskGetTickCount(), result);
         }
         motor_forward(0,0);
-        second_dataX = data.accX;
-        second_dataY = data.accY;
+        last_dataX = data.accX;
+        last_dataY = data.accY;
     }
     finish();
 }
@@ -818,8 +810,8 @@ void zmain(void)
 
 // Line Following
 #if 1
-
 void black();
+
 void zmain(void)
 {
     setup_motor();
@@ -834,7 +826,7 @@ void zmain(void)
             if(dig.l3 == 1 && dig.r3 == 1)
                 black();
 
-            linefollow(255); //Max speed
+            linefollow(255);
         }
     finish();
 }
@@ -850,28 +842,20 @@ void black()
         time_start = xTaskGetTickCount();
         print_mqtt("Zumo018/start", "%d", time_start);
     }
-        while(dig.l3 != 0 || dig.r3 != 0)
-        {
-            reflectance_digital(&dig);
-            motor_forward(SPEED, 0);
-        }
-
-
-    /*else
+        
+    while(dig.l3 != 0 || dig.r3 != 0)
     {
-        while(dig.l3 != 0 || dig.r3 != 0)
-        {
-            reflectance_digital(&dig);
-            motor_forward(SPEED, 0);
-        }
-    }*/
+        reflectance_digital(&dig);
+        motor_forward(SPEED, 0);
+    }
+
     count++;
 }
 
 #endif
 
 // Maze stuff
-#if 0
+#if 1
 void black();
 void pathfind();
 void intersect(int i);
@@ -1015,7 +999,6 @@ void block()
 
 void pathfind()
 {
-
     if(grid[x+dx][y+dy] == 0 && grid[x-1][y] == 0) // If the intersection in front of us has no obstacle...
     {
         if(dir == 0)
@@ -1044,7 +1027,7 @@ void pathfind()
                 intersect(1);
         }
     }
-
+    //exception = false; //rem
     block();
 }
 
@@ -1085,7 +1068,7 @@ void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay
     vTaskDelay(delay);
 }
 
-void power(void)
+void power()
 {
     // Holds the robot in a loop until the button is pressed.
     while (button == false)
@@ -1104,7 +1087,7 @@ void setup_motor()
     LSM303D_Start();
 }
 
-void drive_to_line(int i)
+void drive_to_line(int x)
 {
     while(1)
     {
@@ -1113,11 +1096,11 @@ void drive_to_line(int i)
         else
             motor_forward(50,0); // Can be changed to linefollow
     }
-    if(i == 1)
+    if(x == 1)
         print_mqtt("Zumo018/ready", "zumo");
-    else if(i == 2)
+    else if(x == 2)
         print_mqtt("Zumo018/ready", "line");  
-    else if(i == 3)
+    else if(x == 3)
         print_mqtt("Zumo018/ready", "maze");
     
     motor_forward(0,0);
