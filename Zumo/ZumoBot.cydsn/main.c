@@ -998,8 +998,6 @@ void block()
         pathfind();
     else
         return;
-        
-
 }
 
 void pathfind()
