@@ -742,7 +742,7 @@ int black()
 #endif
 
 // Sumo Fight
-#if 1
+#if 0
 float result = 0;
     
 void zmain(void)
@@ -809,7 +809,7 @@ void zmain(void)
 #endif
 
 // Line Following
-#if 1
+#if 0
 void black();
 
 void zmain(void)
