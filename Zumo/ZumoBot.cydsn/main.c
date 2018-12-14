@@ -4,11 +4,10 @@
 * @details  <br><br>
     <p>
     <B>General</B><br>
-    You will use Pololu Zumo Shields for your robot project with CY8CKIT-059(PSoC 5LP) from Cypress semiconductor.This 
-    library has basic methods of various sensors and communications so that you can make what you want with them. <br> 
+    You will use Pololu Zumo Shields for your robot project with CY8CKIT-059(PSoC 5LP) from Cypress semiconductor.This
+    library has basic methods of various sensors and communications so that you can make what you want with them. <br>
     <br><br>
     </p>
-    
     <p>
     <B>Sensors</B><br>
     &nbsp;Included: <br>
@@ -22,7 +21,6 @@
     &nbsp;APDS-9301: Ambient light sensor<br>
     &nbsp;IR LED <br><br><br>
     </p>
-    
     <p>
     <B>Communication</B><br>
     I2C, UART, Serial<br>
@@ -46,20 +44,52 @@
 #include <sys/time.h>
 #include "serial1.h"
 #include <unistd.h>
-#define coeff 5/4095; /*Vref divided by the number of steps between 0 and max*/
-#define realv 5/3; /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
+#include <stdlib.h>
+#include <math.h>
+#define coeff 5/4095 /*Vref divided by the number of steps between 0 and max*/
+#define realv 5/3 /*Used to find real voltage, as the ADC reading is 3/5ths of the multimeter reading*/
+#define SIZE 6
+#define MAXSPEED 255
+#define SUMOSPEED 200
+#define SPEED 150
+#define PI 3.141592654
+
 /**
  * @file    main.c
- * @brief   
+ * @brief
  * @details  ** Enable global interrupt since Zumo library uses interrupts. **<br>&nbsp;&nbsp;&nbsp;CyGlobalIntEnable;<br>
 */
-void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay);
+void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay);
+void power(void);
+void linefollow(int x);
+void setup_motor();
+void drive_to_line(int i);
+void finish();
+bool button = false, white = false, flag = false;
+struct sensors_ dig;
+struct sensors_ ref;
+struct accData_ data;
+int count = 0;
+float light_ratio = 0;
+TickType_t time_start, time_end;;
+void drive_to_black();
+struct accData_ data;
+void acceltest(void);
+int rand(void);
+int seed(void);
+int first_dataX;
+int second_dataX;
+int first_dataY;
+int second_dataY;
+int diff_dataX;
+int diff_dataY;
 
-#if 0
+
 // Week 2 Assignment 1
+#if 0
 void zmain(void){
     uint8 button = 1;
-    while(1){ 
+    while(1){
         button = SW1_Read();
         if (button == 0){
             for (int i = 0; i < 3; i++){
@@ -68,14 +98,14 @@ void zmain(void){
                 BatteryLed_Write(0);
                 vTaskDelay(500);
             }
-        
-            for (int i = 0; i < 3; i++){  
+
+            for (int i = 0; i < 3; i++){
                 BatteryLed_Write(1);
                 vTaskDelay(1500);
                 BatteryLed_Write(0);
                 vTaskDelay(500);
             }
-        
+
             for (int i = 0; i < 3; i++){
                 BatteryLed_Write(1);
                 vTaskDelay(500);
@@ -84,18 +114,18 @@ void zmain(void){
             }
         }
     }
-}    
+}
 #endif
 
+// Week 2 Assignment 2
 #if 0
-// Week 2 Assignment 2, by Lily
 void zmain(void)
 {
     char name[32];
     int age;
-    
+
     TickType_t time_start, time_end, total_time;
-    
+
     printf("\n\n");
 
     printf("Enter your age: ");
@@ -103,7 +133,7 @@ void zmain(void)
     scanf("%d", &age);
     time_end = xTaskGetTickCount();
     total_time = time_end - time_start;
-    if(total_time<3000) 
+    if(total_time<3000)
     {
         if(age <= 21)
         {
@@ -113,12 +143,12 @@ void zmain(void)
         {
             printf("Be quick or be dead");
         }
-        else 
+        else
         {
             printf("Still going strong");
         }
     }
-    else if(total_time >=3000 && total_time <=5000) 
+    else if(total_time >=3000 && total_time <=5000)
     {
         if(age <= 21)
         {
@@ -128,12 +158,12 @@ void zmain(void)
         {
             printf("You’re so average.");
         }
-        else 
+        else
         {
             printf("You are doing ok for your age.");
         }
     }
-    else 
+    else
     {
         if(age <= 21)
         {
@@ -143,22 +173,16 @@ void zmain(void)
         {
             printf("Have you been smoking something illegal? ");
         }
-        else 
+        else
         {
             printf("Do they still allow you to drive?");
         }
     }
-
-    /*while(true)
-    {
-        BatteryLed_Write(!SW1_Read());
-        vTaskDelay(100);
-    }*/
- } 
+ }
 #endif
 
-#if 1
-// Week 2 Assignment 3, by Joshua
+// Week 2 Assignment 3
+#if 0
 void batcheck();
 void batterytest();
 void ledloop();
@@ -167,20 +191,16 @@ float volts = 0.0;
 bool warning = false;
 
 void zmain(void)
-{   
-
+{
     ADC_Battery_Start();
     ADC_Battery_StartConvert();
     while(1)
     {
         if (warning == false)
-        {
             batcheck();
-        }
+
         else if (warning == true)
-        {
             ledloop();
-        }
     }
 }
 
@@ -194,9 +214,7 @@ void batcheck()
         volts = converted * realv;
         printf("%d %f\r\n",adcresult, volts);
         if (volts <= 4.0)
-        {
             warning = true;
-        }
         vTaskDelay(500);
     }
 }
@@ -204,7 +222,7 @@ void batcheck()
 void ledloop()
 {
     uint8 i = 0;
-    
+
     while(warning == true)
     {
         Beep(500, i);
@@ -216,115 +234,46 @@ void ledloop()
         BatteryLed_Write(0);
         vTaskDelay(500);
         if(SW1_Read() == 0)
-        {
             warning = false;
-        }
-    }
-}
-
-#endif
-
-#if 0
-// button
-void zmain(void)
-{
-    uint8 button = SW1_Read();
-    void S()
-    {
-        for(int i = 0; i <= 2; i++)
-        {
-            printf("S");
-            BatteryLed_Write(1);
-            vTaskDelay(100);
-            BatteryLed_Write(0);
-            vTaskDelay(100);  
-        }
-    }
-    
-    void O()
-    {
-        for(int i = 0; i <= 2; i++)
-        {
-            printf("O");
-            BatteryLed_Write(1);
-            vTaskDelay(300);
-            BatteryLed_Write(0);
-            vTaskDelay(100);  
-        }
-    }
-    while(button == 0) 
-    {
-        /* printf("Press button within 5 seconds!\n");
-        int i = 50;
-        while(i > 0) {
-            if(SW1_Read() == 0) {
-                break;
-            }
-            vTaskDelay(100);
-            --i;
-        }
-        if(i > 0) {
-            printf("Good work\n");
-            while(SW1_Read() == 0) vTaskDelay(10); // wait until button is released
-        }
-        else {
-            printf("You didn't press the button\n");
-        }*/
-        S();
-        O();
-        S();
     }
 }
 #endif
 
+// Week 3 Assignment 1
 #if 0
-// button
 void zmain(void)
 {
-    printf("\nBoot\n");
+    motor_start();              // enable motor controller
+    motor_forward(0,0);         // set speed to zero to stop motors
 
-    //BatteryLed_Write(1); // Switch led on 
-    BatteryLed_Write(0); // Switch led off 
-    
-    //uint8 button;
-    //button = SW1_Read(); // read SW1 on pSoC board
-    // SW1_Read() returns zero when button is pressed
-    // SW1_Read() returns one when button is not pressed
-    
-    bool led = false;
-    
-    for(;;)
-    {
-        // toggle led state when button is pressed
-        if(SW1_Read() == 0) {
-            led = !led;
-            BatteryLed_Write(led);
-            if(led) printf("Led is ON\n");
-            else printf("Led is OFF\n");
-            Beep(1000, 150);
-            while(SW1_Read() == 0) vTaskDelay(10); // wait while button is being pressed
-        }        
-    }
- }   
+    vTaskDelay(5000);
+    motor_turn(177,200,2000);     // moving forward
+    motor_tank_turn(1,150,150,330);
+    motor_turn(177,200,1700);     // moving forward
+    motor_tank_turn(1,150,150,330);     // turn right
+    motor_turn(177,200,1800);     // moving forward
+    motor_tank_turn(1,150,150,355);     // turn right
+    motor_turn(140,80,2700);     // turn right
+    motor_turn(177,200,500);     // turn right
+
+    motor_forward(0,0);         // stop motors
+
+    motor_stop();               // disable motor controller
+}
 #endif
 
+// Week 3 Assignment 2
 #if 0
-
 void zmain(void)
 {
-    uint8_t button = 0;
     while(1)
     {
-        Ultra_Start(); 
+        Ultra_Start();
         motor_start();
+        power();
         motor_forward(0,0);
-        if(SW1_Read() == 0)
-        {
-            button = !button;
-        }
-        
-                                
-        while(button == 1) 
+
+        while(button == true)
         {
             int d = Ultra_GetDistance(); // d is distance in cm
             printf("distance = %d\r\n", d);
@@ -333,270 +282,871 @@ void zmain(void)
                 Beep(100, 100);
                 motor_backward(0,0);
                 motor_turn(150, 75, 500);
-                //motor_tank_turn('l', 100, 100, 500);
             }
-            else 
+            else
             {
                 motor_forward(150, 0);
             }
         }
     }
-}  
-    
-
-#endif
-
-#if 0
-//IR receiverm - how to wait for IR remote commands
-void zmain(void)
-{
-    IR_Start();
-    
-    printf("\n\nIR test\n");
-    
-    IR_flush(); // clear IR receive buffer
-    printf("Buffer cleared\n");
-    
-    bool led = false;
-    // Toggle led when IR signal is received
-    for(;;)
-    {
-        IR_wait();  // wait for IR command
-        led = !led;
-        BatteryLed_Write(led);
-        if(led) printf("Led is ON\n");
-        else printf("Led is OFF\n");
-    }    
- }   
-#endif
-
-#if 0
-//IR receiver - read raw data
-void zmain(void)
-{
-    IR_Start();
-    
-    uint32_t IR_val; 
-    
-    printf("\n\nIR test\n");
-    
-    IR_flush(); // clear IR receive buffer
-    printf("Buffer cleared\n");
-    
-    // print received IR pulses and their lengths
-    for(;;)
-    {
-        if(IR_get(&IR_val, portMAX_DELAY)) {
-            int l = IR_val & IR_SIGNAL_MASK; // get pulse length
-            int b = 0;
-            if((IR_val & IR_SIGNAL_HIGH) != 0) b = 1; // get pulse state (0/1)
-            printf("%d %d\r\n",b, l);
-        }
-    }    
- }   
-#endif
-
-#if 0
-//reflectance
-void zmain(void)
-{
-    struct sensors_ ref;
-    struct sensors_ dig;
-
-    reflectance_start();
-    reflectance_set_threshold(9000, 9000, 11000, 11000, 9000, 9000); // set center sensor threshold to 11000 and others to 9000
-    
-
-    for(;;)
-    {
-        // read raw sensor values
-        reflectance_read(&ref);
-        // print out each period of reflectance sensors
-        printf("%5d %5d %5d %5d %5d %5d\r\n", ref.l3, ref.l2, ref.l1, ref.r1, ref.r2, ref.r3);       
-        
-        // read digital values that are based on threshold. 0 = white, 1 = black
-        // when blackness value is over threshold the sensors reads 1, otherwise 0
-        reflectance_digital(&dig); 
-        //print out 0 or 1 according to results of reflectance period
-        printf("%5d %5d %5d %5d %5d %5d \r\n", dig.l3, dig.l2, dig.l1, dig.r1, dig.r2, dig.r3);        
-        
-        vTaskDelay(200);
-    }
-}   
-#endif
-
-#if 0
-//motor
-void zmain(void)
-{
-    motor_start();              // enable motor controller
-    motor_forward(0,0);         // set speed to zero to stop motors
-
-    vTaskDelay(3000);
-    
-    motor_forward(100,2000);     // moving forward
-    motor_turn(200,50,2000);     // turn
-    motor_turn(50,200,2000);     // turn
-    motor_backward(100,2000);    // moving backward
-     
-    motor_forward(0,0);         // stop motors
-
-    motor_stop();               // disable motor controller
-    
-    for(;;)
-    {
-
-    }
 }
 #endif
 
+// Week 3 Assignment 3
 #if 0
-/* Example of how to use the Accelerometer!!!*/
+int thresh = -5000;
+void acceltest(void);
+int randn(void);
+int seed(void);
+
 void zmain(void)
 {
-    struct accData_ data;
-    
-    printf("Accelerometer test...\n");
+    power();
+    acceltest();
+    srand(seed());
 
-    motor_start();              // enable motor controller
-    motor_forward(40,10000);
-    if(!LSM303D_Start()){
-        printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
-        vTaskSuspend(NULL);
-    }
-    else {
-        printf("Device Ok...\n");
-    }
-    
-    for(;;)
+    while(1)
     {
         LSM303D_Read_Acc(&data);
-        printf("%8d %8d %8d\n",data.accX, data.accY, data.accZ);
+
+        if(randn() == 5)
+        {
+            Beep(50,100);
+            if(data.accX % 2 == 0)
+            {
+                motor_tank_turn(0, 100, 100, 500);
+            }
+            else if(data.accX % 2 != 0)
+            {
+                motor_tank_turn(1, 100, 100, 500);
+            }
+            motor_forward(0,0);
+        }
+
+        else
+        {
+            if(data.accX > thresh)
+            {
+            motor_forward(100,0);
+            }
+
+            else if(data.accX < thresh)
+            {
+                motor_backward(100, 200);
+
+                if(data.accX % 2 == 0)
+                {
+                    motor_tank_turn(0, 100, 100, 500);
+                }
+                else if(data.accX % 2 != 0)
+                {
+                    motor_tank_turn(1, 100, 100, 500);
+                }
+                motor_forward(0,0);
+            }
+        }
         vTaskDelay(50);
     }
- }   
-#endif    
+}
 
-#if 0
-// MQTT test
-void zmain(void)
+void acceltest(void)
 {
-    int ctr = 0;
-
-    printf("\nBoot\n");
-    send_mqtt("Zumo01/debug", "Boot");
-
-    //BatteryLed_Write(1); // Switch led on 
-    BatteryLed_Write(0); // Switch led off 
-
-    for(;;)
+    if(!LSM303D_Start())
     {
-        printf("Ctr: %d, Button: %d\n", ctr, SW1_Read());
-        print_mqtt("Zumo01/debug", "Ctr: %d, Button: %d", ctr, SW1_Read());
-
-        vTaskDelay(1000);
-        ctr++;
-    }
- }   
-#endif
-
-#if 0
-void zmain(void)
-{    
-    struct accData_ data;
-    struct sensors_ ref;
-    struct sensors_ dig;
-    
-    printf("MQTT and sensor test...\n");
-
-    if(!LSM303D_Start()){
         printf("LSM303D failed to initialize!!! Program is Ending!!!\n");
         vTaskSuspend(NULL);
     }
-    else {
-        printf("Accelerometer Ok...\n");
+    else
+    {
+        printf("Device Ok...\n");
     }
-    
-    int ctr = 0;
-    reflectance_start();
-    for(;;)
+}
+
+int seed(void)
+{
+    int x = 0;
+    motor_start();
+    motor_forward(100, 0);
+    for(int i = 0; i < 10; i++)
     {
         LSM303D_Read_Acc(&data);
-        // send data when we detect a hit and at 10 second intervals
-        if(data.accX > 1500 || ++ctr > 1000) {
-            printf("Acc: %8d %8d %8d\n",data.accX, data.accY, data.accZ);
-            print_mqtt("Zumo01/acc", "%d,%d,%d", data.accX, data.accY, data.accZ);
-            reflectance_read(&ref);
-            printf("Ref: %8d %8d %8d %8d %8d %8d\n", ref.l3, ref.l2, ref.l1, ref.r1, ref.r2, ref.r3);       
-            print_mqtt("Zumo01/ref", "%d,%d,%d,%d,%d,%d", ref.l3, ref.l2, ref.l1, ref.r1, ref.r2, ref.r3);
-            reflectance_digital(&dig);
-            printf("Dig: %8d %8d %8d %8d %8d %8d\n", dig.l3, dig.l2, dig.l1, dig.r1, dig.r2, dig.r3);
-            print_mqtt("Zumo01/dig", "%d,%d,%d,%d,%d,%d", dig.l3, dig.l2, dig.l1, dig.r1, dig.r2, dig.r3);
-            ctr = 0;
+        if(data.accX > x)
+        {
+           x = (data.accX);
         }
-        vTaskDelay(10);
+        vTaskDelay(50);
     }
- }   
+    return x;
+}
 
+int randn(void)
+{
+    int i = 0, count = 0;
+    for(i = 0; i < 5; i++)
+    {
+        if((rand() % 2) == 1)
+        {
+            count += 1;
+        }
+    }
+    return count;
+}
 #endif
 
+// Week 4 Assignment 1
+#if 0
+
+void drive_to_color(int i)
+{
+    reflectance_digital(&dig);
+    while(dig.l3 != i || dig.r3 != i)
+    {
+        reflectance_digital(&dig);
+        motor_forward(40,0);
+    }
+    motor_forward(0,0);
+}
+
+void zmain(void)
+{
+    setup_motor();
+    power();
+    drive_to_color(1);
+    motor_forward(0,0);
+    IR_wait();
+
+    for(int i=0;i<3;i++)
+    {
+        drive_to_color(0);
+        drive_to_color(1);
+    }
+    motor_forward(0,0);
+}
+#endif
+
+// Week 4 Assignment 2
+#if 0
+int black();
+void fwhite();
+TickType_t tid = 0, tid2 = 0;
+bool was_white;
+
+void zmain(void) {
+    setup_motor();
+    power();
+
+    while (count < 5) {
+        was_white = false;
+        reflectance_read(&ref);
+        reflectance_digital(&dig);
+        motor_forward(SPEED, 0);
+        if(dig.l3 == 1 && dig.r3 == 1)
+        {
+            count++;
+            black();
+            fwhite();
+        }
+        else
+        {
+            light_ratio = (float)ref.l1 / ref.r1;
+            // Left Turns
+            if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
+                motor_turn(MAXSPEED/light_ratio, MAXSPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(MAXSPEED*0.7/light_ratio, MAXSPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(0, MAXSPEED, 0);
+
+            // Right Turns
+            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+                motor_turn(MAXSPEED, MAXSPEED * light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))
+                motor_turn(MAXSPEED, MAXSPEED*0.7*light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)
+                motor_turn(MAXSPEED, 0, 0);
+
+            // Going Straight
+            else if(light_ratio == 1.0)
+                motor_turn(MAXSPEED, MAXSPEED, 0);
+        }
+    }
+}
+
+int black()
+{
+    if(count == 1)
+    {
+        motor_forward(0,0);
+        Beep(100, 50);
+        IR_wait();
+        tid = xTaskGetTickCount();
+
+        while(dig.l3 != 0 || dig.r3 != 0)
+        {
+            reflectance_digital(&dig);
+            motor_forward(SPEED, 0);
+        }
+        tid2 = xTaskGetTickCount() - tid;
+    }
+
+    else
+    {
+        while(dig.l3 != 0 || dig.r3 != 0)
+        {
+            reflectance_digital(&dig);
+            motor_forward(SPEED, 0);
+        }
+    }
+
+    return tid2;
+}
+
+void fwhite()
+{
+    if(count < 5)
+    {
+        motor_forward(SPEED, tid2); // Drives forward for the same time it takes to travel the width of a black line
+        if(count == 2) motor_tank_turn(0, SPEED, SPEED, 500); // Turn left on the first intersection
+        else if(count > 2) motor_tank_turn(1, SPEED, SPEED, 500); // Turn right for all others
+        while(1)
+        {
+            reflectance_digital(&dig);
+            if(count == 2) motor_tank_turn(0, SPEED, SPEED, 0);
+            else if(count > 2) motor_tank_turn(1, SPEED, SPEED, 0);
+
+            if(dig.l1 == 1 && dig.r1 == 1 && dig.l2 == 0 && dig.r2 == 0) break;
+        }
+        motor_forward(0,0);
+    }
+    else motor_forward(0,0);
+}
+#endif
+
+// Week 4 Assignment 3
+#if 0
+struct sensors_ dig;
+struct sensors_ ref;
+
+int count = 0;
+int last = 0, most = 18000;
+float light_ratio = 0;
+TickType_t time_start;
+
+void zmain(void)
+{
+    setup_motor();
+    while(button == false) if(SW1_Read() == 0) button = true;
+
+        while(count < 2)
+        {
+            while(count == 0)
+            {
+                reflectance_read(&ref);
+                reflectance_digital(&dig);
+                if(dig.l3 == 1 && dig.r3 == 1 && white == true)
+                {
+                    motor_forward(0,0);
+                    IR_wait();
+                    time_start = xTaskGetTickCount();
+                    count++;
+                    white = false;
+                }
+                else if(dig.l3 == 0 || dig.r3 == 0) white = true;
+
+                light_ratio = (float)ref.l1 / ref.r1;
+                // Left Turns
+                if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
+                    motor_turn(speed/light_ratio, speed, 0);
+                else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
+                    motor_turn(speed*0.7/light_ratio, speed, 0);
+                else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
+                    motor_turn(0, speed, 0);
+                // Right Turns
+                else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+                    motor_turn(speed, speed * light_ratio, 0);
+                else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))
+                    motor_turn(speed, speed*0.7*light_ratio, 0);
+                else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)
+                    motor_turn(speed, 0, 0);
+                // Going Straight
+                else if(light_ratio == 1.0)
+                    motor_turn(speed, speed, 0);
+            }
+
+            reflectance_read(&ref);
+            reflectance_digital(&dig);
+
+            if(dig.l3 == 1 && dig.r3 == 1 && white == true){
+                count++;
+                white = false;
+            }
+
+            else if(dig.l3 == 0 || dig.r3 == 0) white = true;
+
+            if(ref.l1 >= most) ref.l1 = most;
+            else if(ref.r1 >= most) ref.r1 = most;
+            light_ratio = (float)ref.l1 / ref.r1;
+
+            // Left Turns
+            if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
+                motor_turn(MAXSPEED/light_ratio, MAXSPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(MAXSPEED*0.7/light_ratio, MAXSPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(0, MAXSPEED, 0);
+
+            // Right Turns
+            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+                motor_turn(MAXSPEED, MAXSPEED * light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))
+                motor_turn(MAXSPEED, MAXSPEED*0.7*light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)
+                motor_turn(MAXSPEED, 0, 0);
+
+            // Going Straight
+            else if(light_ratio == 1.0)
+                motor_turn(MAXSPEED, MAXSPEED, 0);
+        }
+    motor_forward(0,0);
+}
+#endif
+
+// Week 5 Assignment 1
 #if 0
 void zmain(void)
-{    
+{
+    int hour = 0, min = 0;
     RTC_Start(); // start real time clock
-    
     RTC_TIME_DATE now;
 
     // set current time
-    now.Hour = 12;
-    now.Min = 34;
-    now.Sec = 56;
-    now.DayOfMonth = 25;
-    now.Month = 9;
+    now.Sec = 0;
+    now.Min = 0;
+    now.Hour = 0;
+    now.DayOfMonth = 29;
+    now.Month = 11;
     now.Year = 2018;
-    RTC_WriteTime(&now); // write the time to real time clock
+    printf("Enter the hour \n");
+    scanf("%d", &hour);
+    now.Hour = hour;
+    printf("Enter the minutes \n");
+    scanf("%d", &min);
+    now.Min = min;
+
+    RTC_WriteTime(&now);
+
 
     for(;;)
     {
         if(SW1_Read() == 0) {
             // read the current time
-            RTC_DisableInt(); /* Disable Interrupt of RTC Component */
-            now = *RTC_ReadTime(); /* copy the current time to a local variable */
-            RTC_EnableInt(); /* Enable Interrupt of RTC Component */
+            RTC_DisableInt(); // Disable Interrupt of RTC Component
+            now = *RTC_ReadTime(); // copy the current time to a local variable
+            RTC_EnableInt(); // Enable Interrupt of RTC Component
 
             // print the current time
-            printf("%2d:%02d.%02d\n", now.Hour, now.Min, now.Sec);
-            
+            print_mqtt("Zumo018/time", "%2d:%02d.%02d\n", now.Hour, now.Min, now.Sec);
+
             // wait until button is released
             while(SW1_Read() == 0) vTaskDelay(50);
         }
         vTaskDelay(50);
     }
- }   
+ }
 #endif
 
-// Put functions here for now
-
-void motor_tank_turn(char direction, uint8 l_speed, uint8 r_speed, uint32 delay)
+// Week 5 Assignment 2
+#if 0
+void zmain(void)
 {
-    if(direction == 'l') 
+    TickType_t time = xTaskGetTickCount();
+    setup_motor();
+    power();
+
+    while(1)
     {
-        MotorDirLeft_Write(1);      // Sets left tread to reverse
-        MotorDirRight_Write(0);
+        int d = Ultra_GetDistance(); // d is distance in cm
+        printf("distance = %d\r\n", d);
+        if( d <= 10 )
+        {
+            if((xTaskGetTickCount() - time) % 2 == 0)
+            {
+                motor_backward(150,300);
+                motor_tank_turn(0, 150, 150, 400);
+                print_mqtt("Zumo018/turn", "Turned left!");
+            }
+            else
+            {
+                motor_backward(150,300);
+                motor_tank_turn(1, 150, 150, 400);
+                print_mqtt("Zumo018/turn", "Turned right!");
+            }
+        }
+        else motor_forward(150, 0);
     }
-    if(direction == 'r') 
-    {
-        MotorDirLeft_Write(0);      
-        MotorDirRight_Write(1);     // Sets right tread to reverse
+}
+#endif
+
+// Week 5 Assignment 3
+#if 0
+int black();
+void fwhite();
+TickType_t tid = 0, tid2 = 0;
+int dir = 0, column = 0, row = 0;
+
+void zmain(void)
+{
+    setup_motor();
+    power();
+
+    while (1) {
+        reflectance_read(&ref);
+        reflectance_digital(&dig);
+        motor_forward(SPEED, 0);
+
+        if(dig.l3 == 1 && dig.r3 == 1)
+        {
+            black();
+        }
+        else //line follow junk
+        {
+            light_ratio = (float)ref.l1 / ref.r1;
+            // Left Turns
+            if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
+                motor_turn(SPEED/light_ratio, SPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(SPEED*0.7/light_ratio, SPEED, 0);
+            else if(light_ratio > 1.0 && dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1))
+                motor_turn(0, SPEED, 0);
+
+            // Right Turns
+            else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+                motor_turn(SPEED, SPEED * light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))
+                motor_turn(SPEED, SPEED*0.7*light_ratio, 0);
+            else if(light_ratio < 1.0 && dig.r1 == 0 && dig.r2 == 1 && dig.r3 == 1)
+                motor_turn(SPEED, 0, 0);
+
+            // Going Straight
+            else if(light_ratio == 1.0)
+                motor_turn(SPEED, SPEED, 0);
+        }
     }
-    PWM_WriteCompare1(l_speed); 
-    PWM_WriteCompare2(r_speed); 
-    vTaskDelay(delay);
-    
-    MotorDirLeft_Write(0);          // Returns both motors to forward after turn is complete    
-    MotorDirRight_Write(0); 
 }
 
+int black()
+{
+    count++;
+    motor_forward(0, 0);
+    IR_flush();
+    IR_wait();
+    if(count == 1) tid = xTaskGetTickCount();
+    if(count > 1) print_mqtt("Zumo018/lap", "Elapsed time: %d", xTaskGetTickCount() - tid);
+    while(dig.l3 != 0 || dig.r3 != 0)
+    {
+        reflectance_digital(&dig);
+        motor_forward(SPEED, 0);
+    }
+    return tid;
+}
+#endif
 
+// Sumo Fight
+#if 0
+int lastresult;
+    
+void zmain(void)
+{
+    setup_motor();
+    power();
+    drive_to_line(1);
+    IR_wait();
+    time_start=xTaskGetTickCount();
+    print_mqtt("Zumo018/start", "%d", time_start);
+    
+    motor_forward(100, 300);
+
+
+    while(button == true)
+    {
+        reflectance_digital(&dig);
+        if(SW1_Read() == 0) button = false;
+
+        if (dig.l3 == 1 || dig.l2 == 1){
+            motor_backward(SUMOSPEED, 180);
+            motor_tank_turn(1, SUMOSPEED, SUMOSPEED, 180);
+        }
+        else if (dig.r3 == 1 || dig.r2 == 1){
+            motor_backward(SUMOSPEED, 180);
+            motor_tank_turn(0, SUMOSPEED, SUMOSPEED, 200);
+        }
+        else if ((dig.r1 == 1 && dig.l1 == 1) || (dig.r2 == 1 && dig.l2 == 1) || (dig.r3 == 1 && dig.l3 == 1)){
+            motor_backward(SUMOSPEED, 200);
+            motor_tank_turn(0, SUMOSPEED, SUMOSPEED, 125);
+        }
+        else {
+            motor_forward(MAXSPEED,0);
+        }
+
+        LSM303D_Read_Acc(&data);
+
+
+        diff_dataX = data.accX - second_dataX;
+        diff_dataY = data.accY - second_dataY;
+
+        float tan = data.accY / data.accX;
+        float result;
+
+        result = atan(tan); //angle in radians
+        result = (result * 180) / PI;  // Converting radians to degrees
+        
+        if (result != 0 && result != lastresult)
+            print_mqtt("Zumo018/hit", "%d %.2f", xTaskGetTickCount(), result);
+        second_dataX = data.accX;
+        second_dataY = data.accY;
+        lastresult = result;
+    }
+    finish();
+}
+
+#endif
+
+// Line Following
+#if 0
+void black();
+void zmain(void)
+{
+    setup_motor();
+    power();
+    drive_to_line(2);
+
+        while(count < 3)
+        {
+            reflectance_read(&ref);
+            reflectance_digital(&dig);
+
+            if(dig.l3 == 1 && dig.r3 == 1)
+                black();
+
+            linefollow(255); //Max speed
+        }
+    finish();
+}
+
+void black()
+{
+    /* This function serves to move the robot over a black line while only counting it once.
+    If the count is at the starting position, the function waits for IR input. A timestamp is taken after IR input is given. */
+    if(count == 0)
+    {
+        motor_forward(0,0);
+        IR_wait();
+        time_start = xTaskGetTickCount();
+        print_mqtt("Zumo018/start", "%d", time_start);
+    }
+        while(dig.l3 != 0 || dig.r3 != 0)
+        {
+            reflectance_digital(&dig);
+            motor_forward(SPEED, 0);
+        }
+
+
+    /*else
+    {
+        while(dig.l3 != 0 || dig.r3 != 0)
+        {
+            reflectance_digital(&dig);
+            motor_forward(SPEED, 0);
+        }
+    }*/
+    count++;
+}
+
+#endif
+
+// Maze stuff
+#if 1
+void black();
+void pathfind();
+void intersect(int i);
+void block();
+TickType_t tid = 0;
+int dir = 0, dumdir = 0, x = 15, y = 4, dx = 0, dy = 0, d = 0;
+// Dir 0 is N, Dir 1 is E, Dir -1 is W, and nothing is S. We avoid S at all costs.
+int grid[15][9] = //0 - 14 rows, 0 - 8 columns
+{
+    {1, 1, 1, 0, 0, 0, 1, 1, 1},
+    {1, 1, 0, 0, 0, 0, 0, 1, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 1}, //Wait for IR happens at [14][4]
+};
+
+void zmain(void)
+{
+    setup_motor();
+    power();
+    drive_to_line(3);
+
+    while(x > 0)
+    {
+        reflectance_digital(&dig);
+
+        if(dig.l3 == 1 || dig.r3 == 1)
+        {
+            black();
+            motor_forward(SPEED, tid/2);
+            block();
+        }
+        else
+            linefollow(255);
+    }
+    
+    if(y > 4)
+        intersect(0);
+    else if(y < 4)
+        intersect(1);
+
+    while(y != 4)
+    {
+        if(dig.l3 == 1 || dig.r3 == 1)
+            black(); 
+        else
+            linefollow(255);
+    }
+    
+    if(dir == 1)
+        intersect(0);
+    else if(dir == -1)
+        intersect(1);
+        
+    while(dig.l1 == 1 || dig.r1 == 1)
+        linefollow(255);
+        
+    finish();
+}
+
+void black()
+{
+    /* Same as with the black() function in the line follow program, this function serves to move the robot over a black line
+    while only counting it once. If the count is at the starting position, the function waits for IR input. */
+
+    if(x == 15)
+    {
+        motor_forward(0,0);
+        IR_wait();
+        time_start = xTaskGetTickCount();
+        print_mqtt("Zumo018/start", "%d", time_start);
+        while(dig.l3 != 0 || dig.r3 != 0)
+        {
+            reflectance_digital(&dig);
+            motor_forward(SPEED, 0);
+        }
+        tid = xTaskGetTickCount() - time_start; // Records how long it took the robot to travel over the black line.
+    }
+
+    else
+    {
+        while(dig.l3 != 0 || dig.r3 != 0)
+        {
+            reflectance_digital(&dig);
+            motor_forward(SPEED, 0);
+        }
+    }
+    if(dir == 0)
+        x--;
+    else if(dir == -1)
+        y--;
+    else if(dir == 1)
+        y++;
+    print_mqtt("Zumo018/position", "%d, %d", y-4, 15-x);
+}
+
+void block()
+{
+    if(dir == 0)
+        dx = -1, dy = 0;
+    else if(dir == -1)
+        dx = 0, dy = -1;
+    else if(dir == 1)
+        dx = 0, dy = 1;
+    /* This series of if/else statements expands current dir into two numbers (dx, dy) that can be added to
+    the current position (x, y) to find the position of the intersection ahead of the robot. */
+
+    d = Ultra_GetDistance();
+
+    if(d < 20) // If an object is within 20 centimetres of the robot...
+    {
+        grid[x+dx][y+dy] = 1; // The intersection ahead of the robot is switched to a 1
+        if(dir != 0)
+            grid[x-1][y+dy] = 1; // This coordinate is flipped so it is no longer considered a possible pathway by pathfind()  
+    }
+    
+    if(grid[x+dx][y+dy] == 1)
+        pathfind();
+    else if(dir != 0 && grid[x-1][y] == 0)
+        pathfind();
+    else
+        return;
+}
+
+void pathfind()
+{
+
+    if(grid[x+dx][y+dy] == 0 && grid[x-1][y] == 0) // If the intersection in front of us has no obstacle...
+    {
+        if(dir == 0)
+            return; // and the robot is facing forwards towards the exit, then exit function.
+        else if(dir == 1)
+            intersect(0); // and the robot is facing to the right, then turn left.
+        else if(dir == -1)
+            intersect(1);// and the robot is facing to the left, then turn right.
+    }
+
+    else if(grid[x+dx][y+dy] == 1) // If the intersection in front of us has a block on it...
+    {
+        if(y <= 4) // and the robot is to the left of centre
+        {
+            if((grid[x-1][y+1] == 0 && grid[x][y+1] == 0) || y == 1) // then first check if path to the right of robot is clear.
+                intersect(1);
+            else if(grid[x-1][y-1] == 0) // otherwise, check the left.
+                intersect(0);
+        }
+        else if(y > 4) // Vice versa to the above If's operations.
+        {
+            if((grid[x-1][y-1] == 0 && grid[x][y-1] == 0) || y == 7)
+                intersect(0);
+
+            else if(grid[x-1][y+1] == 0)
+                intersect(1);
+        }
+    }
+
+    block();
+}
+
+void intersect(int i)
+{
+    if(i == 0)
+        dir--;
+    else if(i == 1)
+        dir++;
+    // If the robot is turning left, the direction must be decrementing and vice versa.
+
+    while(1)
+    {
+        reflectance_digital(&dig);
+
+        motor_tank_turn(i, SPEED, SPEED, 0);
+        if(dig.l1 == 0 && dig.r1 == 0) white = true;
+
+        if(dig.l1 == 1 && dig.r1 == 1 && dig.r2 == 0 && dig.l2 == 0 && white == true)
+            break;
+    }
+    white = false;
+    motor_forward(0,0); // Returns motors to normal after the tank turn.
+}
+
+#endif 
+
+// Our own functions
+
+void motor_tank_turn(uint8 dir, uint8 l_MAXSPEED, uint8 r_MAXSPEED, uint32 delay)
+{
+    // Sets the motors in opposite directions so that the robot turns on the spot.
+    // Dir 0 turns robot left, dir 1 turns robot right.
+    MotorDirLeft_Write(!dir);
+    MotorDirRight_Write(dir);
+    PWM_WriteCompare1(l_MAXSPEED);
+    PWM_WriteCompare2(r_MAXSPEED);
+    vTaskDelay(delay);
+}
+
+void power(void)
+{
+    // Holds the robot in a loop until the button is pressed.
+    while (button == false)
+        if (SW1_Read() == 0) button = true;
+}
+
+void setup_motor()
+{
+    motor_start();
+    motor_forward(0,0);
+    Ultra_Start();
+    IR_Start();
+    IR_flush();
+    reflectance_start();
+    reflectance_set_threshold(15000,15000,15000,15000,15000,15000); // was 16k
+    LSM303D_Start();
+}
+
+void drive_to_line(int i)
+{
+    while(1)
+    {
+        reflectance_digital(&dig);
+        if(dig.l3 == 1 && dig.r3 == 1) break;
+        else
+            motor_forward(50,0); // Can be changed to linefollow
+    }
+    if(i == 1)
+        print_mqtt("Zumo018/ready", "zumo");
+    else if(i == 2)
+        print_mqtt("Zumo018/ready", "line");  
+    else if(i == 3)
+        print_mqtt("Zumo018/ready", "maze");
+    
+    motor_forward(0,0);
+}
+
+void linefollow(int x)
+{
+    reflectance_read(&ref);
+    reflectance_digital(&dig);
+    int most = 20000;
+    if(ref.l1 >= most) ref.l1 = most;
+    else if(ref.r1 >= most) ref.r1 = most;
+    light_ratio = (float)ref.l1 / ref.r1; // A ratio is found between the two middle sensors and applied to the motor speed.
+
+    // Left Turns
+    if(light_ratio > 1.0 && dig.l1 == 1 && dig.l2 == 0 && dig.l3 == 0)
+        motor_turn(x/light_ratio, x, 0);
+    else if(light_ratio > 1.0 && dig.l1 == 1 && (dig.l2 == 1 || dig.l3 == 1))
+        motor_turn(x*0.7/light_ratio, x, 0);
+    else if(dig.l1 == 0 && (dig.l2 == 1 || dig.l3 == 1)) //light_ratio > 1.0 &&
+        motor_turn(0, x, 0);
+
+    // Right Turns
+    else if(light_ratio < 1.0 && dig.r1 == 1 && dig.r2 == 0 && dig.r3 == 0)
+        motor_turn(x, x * light_ratio, 0);
+    else if(light_ratio < 1.0 && dig.r1 == 1 && (dig.r2 == 1 || dig.r3 == 1))
+        motor_turn(x, x*0.7*light_ratio, 0);
+    else if(dig.r1 == 0 && (dig.r2 == 1 || dig.r3 == 1))
+        motor_turn(x, 0, 0);
+
+    // Going Straight
+    else if(light_ratio == 1.0 && dig.l1 == 1 && dig.r1 == 1)
+        motor_turn(x, x, 0);
+}
+
+void finish()
+{
+    // All the stuff the robot should do after it has reached the end of its task.
+    motor_forward(0, 0);
+    time_end = xTaskGetTickCount();
+    print_mqtt("Zumo018/stop", "%d", time_end);
+    print_mqtt("Zumo018/time", "%d", time_end - time_start);
+}
 
 /* [] END OF FILE */
